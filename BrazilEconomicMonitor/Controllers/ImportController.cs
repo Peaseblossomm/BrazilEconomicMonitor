@@ -15,10 +15,16 @@ namespace BrazilEconomicMonitor.Controllers
             _client = client;
         }
 
-        [HttpGet("test")]
-        public async Task<string> Test()
+        [HttpGet("fiscal")]
+        public async Task<string> Fiscal(
+            string code,
+            string startDate,
+            string endDate)
         {
-            return await _client.GetGoogleAsync();
+            return await _client.GetFiscalResultAsync(
+            code,
+            startDate,
+            endDate);
         }
     }
 }

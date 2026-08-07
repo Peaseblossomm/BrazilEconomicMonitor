@@ -8,11 +8,16 @@ builder.Services.AddDbContext<BrazilEconomicMonitorDbContext>(
 options =>
 options.UseSqlite("Data Source=brazil.db"));
 
-builder.Services.AddHttpClient<TreasuryApiClient>();
+builder.Services.AddHttpClient<TreasuryApiClient>(client =>
+{
+    client.BaseAddress =
+    new Uri("https://apiapex.tesouro.gov.br/aria/");
+});
 // Add services to the container.   
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
 var app = builder.Build();
@@ -21,13 +26,20 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.UseSwagger();
+
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+
 app.MapControllers();
+
+
 
 /* app.MapGet("/seed", async (BrazilEconomicMonitorDbContext db) =>
 {

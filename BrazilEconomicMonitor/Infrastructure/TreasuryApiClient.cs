@@ -8,10 +8,19 @@
         {
             _httpClient = httpClient;
         }
-        public async Task<string> GetGoogleAsync()
+        public async Task<string> GetFiscalResultAsync(
+            string seriesCode,
+            string startDate,
+            string endDate)
         {
-            return await _httpClient.GetStringAsync(
-            "https://www.google.com");
+            var url =
+            $"v1/series-temporais/custom/resultado-fiscal" +
+            $"?data_inicio={startDate}" +
+            $"&data_fim={endDate}" +
+            $"&tema=10" +
+            $"&codigo_da_serie={seriesCode}";
+
+            return await _httpClient.GetStringAsync(url);
         }
     }
 }
