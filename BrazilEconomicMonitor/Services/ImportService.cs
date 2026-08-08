@@ -1,4 +1,7 @@
-﻿using BrazilEconomicMonitor.Infrastructure;
+﻿using BrazilEconomicMonitor.Domain.Entities;
+using BrazilEconomicMonitor.DTOs;
+using BrazilEconomicMonitor.Infrastructure;
+using System.Text.Json;
 
 namespace BrazilEconomicMonitor.Services
 {
@@ -25,13 +28,30 @@ namespace BrazilEconomicMonitor.Services
             startDate,
             endDate);
 
-            // deserialize json
+        TreasuryResponseDto? response =
+            JsonSerializer.Deserialize<TreasuryResponseDto>(
+                json,
+                new JsonSerializerOptions
+                {
+                PropertyNameCaseInsensitive = true
+                });
+        if (response == null)
+            return;
 
-            // map to Observation
+        foreach (TreasuryRecordDto record in response.Registros)
+        {
+            Observation observation = new Observation
+            {
+                ObservationDate = record.Data,
+                Value = record.Valor
+            };
 
-            // _db.Observations.Add(...)
+            _db.Observations.Add(observation);
+            }
 
-            await _db.SaveChangesAsync();
+        await _db.SaveChangesAsync();
+
         }
+
     }
 }

@@ -15,9 +15,21 @@ namespace BrazilEconomicMonitor.Infrastructure
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Observation>()
-            .HasOne(o => o.Series)
-            .WithMany(s => s.Observations)
-            .HasForeignKey(o => o.SeriesId);
+                .HasOne(o => o.Series)
+                .WithMany(s => s.Observations)
+                .HasForeignKey(o => o.SeriesId);
+
+            modelBuilder.Entity<Series>()
+                .HasIndex(s => new { s.Source, s.Code })
+                .IsUnique();
+
+            modelBuilder.Entity<Observation>()
+                .HasIndex(o => new
+                {
+                    o.SeriesId,
+                    o.ObservationDate
+                })
+                .IsUnique();
         }
     }
 }

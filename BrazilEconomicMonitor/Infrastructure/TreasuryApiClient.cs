@@ -11,7 +11,8 @@
         public async Task<string> GetFiscalResultAsync(
             string seriesCode,
             string startDate,
-            string endDate)
+            string endDate,
+            CancellationToken cancellationToken = default)
         {
             var url =
             $"v1/series-temporais/custom/resultado-fiscal" +
@@ -20,7 +21,24 @@
             $"&tema=10" +
             $"&codigo_da_serie={seriesCode}";
 
-            return await _httpClient.GetStringAsync(url);
+            return await _httpClient.GetStringAsync(
+            url,
+            cancellationToken);
+        }
+
+        public async Task<string> GetSeriesCatalogAsync(
+            int page = 1,
+            int pageSize = 1000,
+            CancellationToken cancellationToken = default)
+        {
+            var url =
+                $"v1/series-temporais/custom/series" +
+                $"?page={page}" +
+                $"&pageSize={pageSize}";
+
+            return await _httpClient.GetStringAsync(
+                url,
+                cancellationToken);
         }
     }
 }

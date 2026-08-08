@@ -1,6 +1,7 @@
-using BrazilEconomicMonitor.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using BrazilEconomicMonitor.Domain.Entities;
+using BrazilEconomicMonitor.Infrastructure;
+using BrazilEconomicMonitor.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,14 +14,31 @@ builder.Services.AddHttpClient<TreasuryApiClient>(client =>
     client.BaseAddress =
     new Uri("https://apiapex.tesouro.gov.br/aria/");
 });
+
+builder.Services.AddScoped<ImportService>();
+
 // Add services to the container.   
 
 builder.Services.AddControllers();
+
 builder.Services.AddOpenApi();
+
 builder.Services.AddSwaggerGen();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+builder.Services.AddScoped<ImportService>();
+
+builder.Services.AddScoped<TreasurySeriesCatalogService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var catalogService =
+        scope.ServiceProvider
+            .GetRequiredService<TreasurySeriesCatalogService>();
+
+    await catalogService.ImportSelectedSeriesAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
