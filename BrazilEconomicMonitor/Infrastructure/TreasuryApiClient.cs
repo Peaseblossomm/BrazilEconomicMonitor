@@ -11,7 +11,7 @@
         public async Task<string> GetFiscalResultAsync(
             string seriesCode,
             string startDate,
-            string endDate,
+            string? endDate,
             CancellationToken cancellationToken = default)
         {
             var url =

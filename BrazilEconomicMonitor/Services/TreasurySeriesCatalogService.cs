@@ -1,19 +1,22 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.DTOs;
 using BrazilEconomicMonitor.Infrastructure;
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Xml.Linq;
 
 namespace BrazilEconomicMonitor.Services
 {
-    public class TreasurySeriesCatalogService
+    public class DataSeriesCatalogService
     {
         private readonly TreasuryApiClient _client;
 
         private readonly BrazilEconomicMonitorDbContext _db;
 
-        private const string TreasurySource =
+        private const string Source =
         "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766";
+
+        private const string SeriesType = "Raw";
 
         private static readonly HashSet<string> WantedSeriesCodes =
     [
@@ -23,7 +26,7 @@ namespace BrazilEconomicMonitor.Services
         "10.09.1"
     ];
 
-        public TreasurySeriesCatalogService(
+        public DataSeriesCatalogService(
             TreasuryApiClient client,
             BrazilEconomicMonitorDbContext db)
         {
@@ -59,7 +62,7 @@ namespace BrazilEconomicMonitor.Services
                     .AnyAsync(
                         s =>
                             s.Code == record.CodigoSerie &&
-                            s.Source == TreasurySource,
+                            s.Source == Source,
                         cancellationToken);
 
                 if (exists)
@@ -69,11 +72,28 @@ namespace BrazilEconomicMonitor.Services
                 {
                     Code = record.CodigoSerie,
                     Name = record.NomeSerie,
-                    Source = TreasurySource
+                    Source = Source
                 };
                 _db.Series.Add(series);
             }
                 await _db.SaveChangesAsync(cancellationToken);
         }
+
+        public async Task ImportDerivedSeriesManually (string Name, string Code, CancellationToken cancellationToken = default)
+        {
+            var series = new Series
+            {
+                Name = Name,
+                Code = Code,
+                Source = "Calculated",
+                IsRaw = false
+            };
+            _db.Series.Add(series);
+
+            await _db.SaveChangesAsync(cancellationToken);
+
+            Console.WriteLine("Series imported successfully.");
+        }
+
     }
 }
