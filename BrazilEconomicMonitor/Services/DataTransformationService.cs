@@ -28,7 +28,7 @@ public class DataTransformationService
         _logger = logger;
     }
 
-    public async Task CalculateTtmAsync(CancellationToken cancellationToken)
+    public async Task UpdateTtmAsync(CancellationToken cancellationToken)
     {
         foreach (string code in _ttmSeriesCodes)
         {
@@ -53,6 +53,19 @@ public class DataTransformationService
                     s => s.Code == ttmCode &&
                             !s.IsRaw,
                     cancellationToken);
+
+            if (ttmSeries == null)
+            {
+                ttmSeries = new Series
+                {
+                    Name = rawSeries.Name + " (TTM)",
+                    Code = ttmCode,
+                    Source = "Calculated",
+                    IsRaw = false
+                };
+                _db.Series.Add(ttmSeries);
+                await _db.SaveChangesAsync(cancellationToken);
+            }
 
             for (int i = 11; i < observations.Count; i++)
             {

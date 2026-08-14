@@ -18,8 +18,9 @@ namespace BrazilEconomicMonitor.Migrations
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Code = table.Column<string>(type: "TEXT", nullable: false),
-                    Source = table.Column<string>(type: "TEXT", nullable: false)
+                    Code = table.Column<string>(type: "TEXT", nullable: true),
+                    Source = table.Column<string>(type: "TEXT", nullable: false),
+                    IsRaw = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -48,9 +49,16 @@ namespace BrazilEconomicMonitor.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Observations_SeriesId",
+                name: "IX_Observations_SeriesId_ObservationDate",
                 table: "Observations",
-                column: "SeriesId");
+                columns: new[] { "SeriesId", "ObservationDate" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Series_Source_Code",
+                table: "Series",
+                columns: new[] { "Source", "Code" },
+                unique: true);
         }
 
         /// <inheritdoc />

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BrazilEconomicMonitor.Migrations
 {
     [DbContext(typeof(BrazilEconomicMonitorDbContext))]
-    [Migration("20260803174327_InitialCreate")]
+    [Migration("20260814163039_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -37,7 +37,8 @@ namespace BrazilEconomicMonitor.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SeriesId");
+                    b.HasIndex("SeriesId", "ObservationDate")
+                        .IsUnique();
 
                     b.ToTable("Observations");
                 });
@@ -49,8 +50,10 @@ namespace BrazilEconomicMonitor.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Code")
-                        .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRaw")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -61,6 +64,9 @@ namespace BrazilEconomicMonitor.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Source", "Code")
+                        .IsUnique();
 
                     b.ToTable("Series");
                 });

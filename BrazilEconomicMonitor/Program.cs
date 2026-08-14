@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<TreasuryImportService>();
 
-builder.Services.AddScoped<DataSeriesCatalogService>();
+builder.Services.AddScoped<SeedDataCatalogService>();
 
 builder.Services.AddHostedService<FiscalDataImportWorker>();
 
@@ -36,29 +36,25 @@ using (var scope = app.Services.CreateScope())
 {
     var service =
         scope.ServiceProvider
-            .GetRequiredService<DataSeriesCatalogService>();
+            .GetRequiredService<SeedDataCatalogService>();
 
-    await service.ImportDerivedSeriesManually(
-        Name: "Primary Balance TTM",
-        Code: "10.07.1_TTM",
-        cancellationToken: CancellationToken.None);
-
-    await service.ImportDerivedSeriesManually(
-        Name: "Primary Balance YoY",
-        Code: "10.07.1_YoY",
-        cancellationToken: CancellationToken.None);
-
-    await service.ImportDerivedSeriesManually(
-        Name: "Nominal Balance TTM",
-        Code: "10.09.1_TTM",
-        cancellationToken: CancellationToken.None);
-
-    await service.ImportDerivedSeriesManually(
-        Name: "Nominal Balance YoY",
-        Code: "10.09.1_YoY",
+    int treasurySourceId = await service.SeedSourcesAsync(
+        Name: "Treasury",
+        SourceDocLink: "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766",
         cancellationToken: CancellationToken.None);
 
 
+    await service.SeedSeriesAsync(
+        Name: "Primary Balance",
+        Code: "10.07.1_",
+        SourceId: treasurySourceId,
+        cancellationToken: CancellationToken.None);
+
+    await service.SeedSeriesAsync(
+        Name: "Nominal Balance",
+        Code: "10.09.1",
+        SourceId: treasurySourceId,
+        cancellationToken: CancellationToken.None);
 }
 // Populate db with historical data if empty (first start)
 using (var scope = app.Services.CreateScope())
@@ -89,7 +85,7 @@ using (var scope = app.Services.CreateScope())
 {
     var catalogService =
         scope.ServiceProvider
-            .GetRequiredService<TreasurySeriesCatalogService>();
+            .GetRequiredService<DataSeriesCatalogService>();
 
     await catalogService.ImportSelectedSeriesAsync();
 }

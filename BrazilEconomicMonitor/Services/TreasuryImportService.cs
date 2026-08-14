@@ -11,9 +11,6 @@ namespace BrazilEconomicMonitor.Services
         private readonly TreasuryApiClient _client;
         private readonly BrazilEconomicMonitorDbContext _db;
 
-        private const string Source =
-        "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766";
-
         public TreasuryImportService(
         TreasuryApiClient client,
         BrazilEconomicMonitorDbContext db)
@@ -47,7 +44,7 @@ namespace BrazilEconomicMonitor.Services
 
             Series? series = await _db.Series
                 .SingleOrDefaultAsync(s => s.Code == code &&
-                s.Source == Source, cancellationToken);
+                s.Sources.Name == "Treasury", cancellationToken);
 
             if (series == null)
             {
@@ -74,7 +71,7 @@ namespace BrazilEconomicMonitor.Services
                     Observation? observation = new Observation
                     {
                         SeriesId = series.Id,
-                        ObservationDate = record.Data,
+                        ObservationDate = observationDate,
                         Value = record.Valor
                     };
 
@@ -88,7 +85,7 @@ namespace BrazilEconomicMonitor.Services
 
         public async Task AddLatestTreasuryData(CancellationToken cancellationToken)
         {
-            List<Series> series = await _db.Series.Where(s => s.Source == Source).ToListAsync(cancellationToken);
+            List<Series> series = await _db.Series.Where(s => s.Sources.Name == "Treasury").ToListAsync(cancellationToken);
 
             foreach (Series serie in series)
             {
