@@ -19,6 +19,31 @@ namespace BrazilEconomicMonitor.Services
             _db = db;
         }
 
+        public async Task AddLatestTreasuryData(CancellationToken cancellationToken)
+        {
+            List<Series> series = await _db.Series.Where(s => s.Sources.Name == "Treasury").ToListAsync(cancellationToken);
+
+            foreach (Series serie in series)
+            {
+                string code = serie.Code;
+
+                DateTime? latestDate = await _db.Observations.Where(s => s.Series.Id == serie.Id).Select(o => (DateTime?)o.ObservationDate).MaxAsync(cancellationToken);
+
+                DateTime startDate =
+                   latestDate?.AddMonths(-3)
+                   ?? new DateTime(2015, 1, 1);
+
+                string apiStartDate =
+                    startDate.ToString("MM/yyyy");
+
+                await ImportFiscalAsync(
+                    code,
+                    apiStartDate,
+                    null,
+                    cancellationToken);
+            }
+        }
+
         public async Task ImportFiscalAsync(
         string code,
         string startDate,
@@ -79,38 +104,7 @@ namespace BrazilEconomicMonitor.Services
                 }
 
                 await _db.SaveChangesAsync(cancellationToken);
-
             }
         }
-
-        public async Task AddLatestTreasuryData(CancellationToken cancellationToken)
-        {
-            List<Series> series = await _db.Series.Where(s => s.Sources.Name == "Treasury").ToListAsync(cancellationToken);
-
-            foreach (Series serie in series)
-            {
-                string code = serie.Code;
-
-                DateTime? latestDate = await _db.Observations.Where(s => s.Series.Id == serie.Id).Select(o => (DateTime?)o.ObservationDate).MaxAsync(cancellationToken);
-
-                DateTime startDate =
-                   latestDate?.AddMonths(-3)
-                   ?? new DateTime(2015, 1, 1);
-
-                string apiStartDate =
-                    startDate.ToString("MM/yyyy");
-
-
-                await ImportFiscalAsync(
-                    code,
-                    apiStartDate,
-                    null,
-                    cancellationToken);
-            }
-
-
-        }
-
-
     }
 }

@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="BrazilEconomicMonitor.Tests/BrazilEconomicMonitor.Tests.csproj" Id="ae8c9932-2698-42e3-991b-340ad2296f76" />
   <Project Path="BrazilEconomicMonitor/BrazilEconomicMonitor.csproj" />
 </Solution>

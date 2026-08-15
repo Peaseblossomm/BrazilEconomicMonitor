@@ -23,6 +23,7 @@ public class DataTransformationService
         ];
 
     public DataTransformationService(BrazilEconomicMonitorDbContext db, ILogger<DataTransformationService> logger)
+
     {
         _db = db;
         _logger = logger;
@@ -56,13 +57,20 @@ public class DataTransformationService
 
             if (ttmSeries == null)
             {
+                Sources? source = await _db.Sources.FirstOrDefaultAsync(s => s.Name == "Derived Value", cancellationToken);
+                if (source == null)
+                {
+                    throw new InvalidOperationException("Derived value source not found");
+                }
+
                 ttmSeries = new Series
                 {
                     Name = rawSeries.Name + " (TTM)",
                     Code = ttmCode,
-                    Source = "Calculated",
+                    SourceId = source.Id,
                     IsRaw = false
                 };
+
                 _db.Series.Add(ttmSeries);
                 await _db.SaveChangesAsync(cancellationToken);
             }

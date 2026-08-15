@@ -43,6 +43,20 @@ using (var scope = app.Services.CreateScope())
         SourceDocLink: "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766",
         cancellationToken: CancellationToken.None);
 
+    int centralBankSourceId = await service.SeedSourcesAsync(
+        Name: "Central Bank",
+        SourceDocLink: "https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries",
+        cancellationToken: CancellationToken.None);
+
+    int centralBankOlindaSourceId = await service.SeedSourcesAsync(
+        Name: "Central Bank Olinda",
+        SourceDocLink: "https://olinda.bcb.gov.br/olinda/service/Expectativas/version/v1/swagger-ui3",
+        cancellationToken: CancellationToken.None);
+
+    int DerivedValueId = await service.SeedSourcesAsync(
+        Name: "Derived value",
+        SourceDocLink: "",
+        cancellationToken: CancellationToken.None);
 
     await service.SeedSeriesAsync(
         Name: "Primary Balance",
