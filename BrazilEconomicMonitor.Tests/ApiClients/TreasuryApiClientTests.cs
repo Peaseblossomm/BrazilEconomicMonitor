@@ -34,13 +34,13 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
                 endDate: "12/2025");
 
             // Assert
-            Assert.Equal(fakeJson, result);
+            Assert.Equal(fakeJson, result); //handler provides the expected json
 
             Assert.NotNull(handler.LastRequest);
 
             Assert.Contains(
                 "codigo_da_serie=10.07.1",
-                handler.LastRequest.RequestUri!.ToString());
+                handler.LastRequest.RequestUri!.ToString()); // Client inserts the expected parameters inside the request URL
 
             Assert.Contains(
                 "data_inicio=01/2025",

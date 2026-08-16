@@ -95,15 +95,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-using (var scope = app.Services.CreateScope())
-{
-    var catalogService =
-        scope.ServiceProvider
-            .GetRequiredService<DataSeriesCatalogService>();
-
-    await catalogService.ImportSelectedSeriesAsync();
-}
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
