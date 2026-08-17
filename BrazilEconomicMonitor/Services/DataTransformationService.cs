@@ -11,16 +11,20 @@ public class DataTransformationService
 
     private readonly ILogger<DataTransformationService> _logger;
 
-    private readonly HashSet<string> _ttmSeriesCodes =
+    private readonly HashSet<string> _ttmSeriesCodes =  // Raw series for which we apply ttm transformation 
         [
             "10.07.1",
             "10.09.1"
         ];
-    private readonly HashSet<string> _YoYSeriesCodes =
+    private readonly HashSet<string> _YoYSeriesCodes =   // Raw series for which we apply YoY transformation
         [
             "10.07.1",
             "10.09.1"
         ];
+    private readonly HashSet<string> _PrincipalBalanceOverGDP =
+        [
+            "10.03.1",
+        ]
 
     public DataTransformationService(BrazilEconomicMonitorDbContext db, ILogger<DataTransformationService> logger)
 
@@ -33,47 +37,24 @@ public class DataTransformationService
     {
         foreach (string code in _ttmSeriesCodes)
         {
-            Series? rawSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code && s.IsRaw, cancellationToken);
+            Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
 
-            if (rawSeries == null)
+            if (inputSeries == null)
                 continue;
 
             List<Observation> observations =
                 await _db.Observations
-                .Where(o => o.SeriesId == rawSeries.Id)
+                .Where(o => o.SeriesId == inputSeries.Id)
                 .OrderByDescending(o => o.ObservationDate)
                 .Take(17)
                 .ToListAsync(cancellationToken);
 
             observations.Reverse();
 
-            string ttmCode = code + "_TTM";
+            string derivedSeriesCode = code + "_TTM";
+            string derivedSeriesName = inputSeries.Name + " TTM";
 
-            Series? ttmSeries = await _db.Series
-                .SingleOrDefaultAsync(
-                    s => s.Code == ttmCode &&
-                            !s.IsRaw,
-                    cancellationToken);
-
-            if (ttmSeries == null)
-            {
-                Sources? source = await _db.Sources.FirstOrDefaultAsync(s => s.Name == "Derived Value", cancellationToken);
-                if (source == null)
-                {
-                    throw new InvalidOperationException("Derived value source not found");
-                }
-
-                ttmSeries = new Series
-                {
-                    Name = rawSeries.Name + " (TTM)",
-                    Code = ttmCode,
-                    SourceId = source.Id,
-                    IsRaw = false
-                };
-
-                _db.Series.Add(ttmSeries);
-                await _db.SaveChangesAsync(cancellationToken);
-            }
+            Series ttmSeries = await FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
 
             for (int i = 11; i < observations.Count; i++)
             {
@@ -93,13 +74,61 @@ public class DataTransformationService
                     continue;
                 }
 
-                decimal sum = 0;
+                decimal ttmSum = 0;
 
                 for (int j = i - 11; j <= i; j++)
                 {
-                    sum += observations[j].Value;
+                    ttmSum += observations[j].Value;
                 }
-                await UpsertDerivedObservationAsync(ttmSeries.Id, last.ObservationDate, sum, cancellationToken);
+                await UpsertDerivedObservationAsync(ttmSeries.Id, last.ObservationDate, ttmSum, cancellationToken);
+            }
+        await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task UpdateYoYAsync(CancellationToken cancellationToken)
+    {
+        foreach (string code in _YoYSeriesCodes)
+        {
+            Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
+
+            if (inputSeries == null)
+                continue;
+
+            List<Observation> observations =
+                await _db.Observations
+                .Where(o => o.SeriesId == inputSeries.Id)
+                .OrderByDescending(o => o.ObservationDate)
+                .Take(24)
+                .ToListAsync(cancellationToken);
+
+            string derivedSeriesCode = code + "_YoY";
+            string derivedSeriesName = inputSeries.Name + " YoY";
+
+            Series YoYSeries = await FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
+
+            for (int i = 0; i < observations.Count - 12; i++)
+            {
+
+                Observation current = observations[i];
+                Observation previousYear = observations[i - 12];
+
+                if (observations[i - 12].Value == 0)
+                {
+                    throw new DivideByZeroException($"Cannot calculate YoY for {current.ObservationDate:MM/yyyy}" +
+                    $"because the value for {previousYear.ObservationDate:MM/yyyy} is zero");
+                }
+
+                if (current.ObservationDate != previousYear.ObservationDate.AddYears(1))
+                {
+                    _logger.LogWarning(
+                    "YoY calculation skipped for {Code} at {Date}: previous-year month is missing.",
+                    code,
+                    current.ObservationDate);
+                }
+                decimal YoYValue = ((current.Value / previousYear.Value) - 1) * 100;
+
+                await UpsertDerivedObservationAsync(YoYSeries.Id, current.ObservationDate, YoYValue, cancellationToken);
             }
             await _db.SaveChangesAsync(cancellationToken);
         }
@@ -134,5 +163,36 @@ public class DataTransformationService
         {
             existing.Value = value;
         }
+    }
+    
+    public async Task<Series> FindOrCreateNewDerivedSeries(string derivedSeriesCode, string derivedSeriesName, CancellationToken cancellationToken)
+    {
+
+        Series? derivedSeries = await _db.Series
+            .SingleOrDefaultAsync(
+                s => s.Code == derivedSeriesCode &&
+                        !s.IsRaw,
+                cancellationToken);
+
+        if (derivedSeries == null)
+        {
+            Sources? source = await _db.Sources.FirstOrDefaultAsync(s => s.Name == "Derived Value", cancellationToken);
+            if (source == null)
+            {
+                throw new InvalidOperationException("Derived value source not found");
+            }
+
+            derivedSeries = new Series
+            {
+                Name = derivedSeriesName,
+                Code = derivedSeriesCode,
+                SourceId = source.Id,
+                IsRaw = false
+            };
+
+            _db.Series.Add(derivedSeries);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        return derivedSeries;
     }
 }
