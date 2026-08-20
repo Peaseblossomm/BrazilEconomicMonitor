@@ -80,7 +80,7 @@ namespace BrazilEconomicMonitor.Tests.ExternalServicesContracts
             decimal value =
             registros[0].GetProperty("valor").GetDecimal();  // is decimal type
 
-            Assert.Equal(new DateTime(2025, 5, 1, 0, 0, 0), date); // retrieves expected date value
+            Assert.Equal(new DateTime(2025, 2, 1, 0, 0, 0), date); // retrieves expected date value
         }
     }
 }

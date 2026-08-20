@@ -3,6 +3,7 @@ using BrazilEconomicMonitor.Infrastructure;
 using BrazilEconomicMonitor.Services;
 using Microsoft.EntityFrameworkCore;
 using BrazilEconomicMonitor.BackgroundJobs;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,12 @@ builder.Services.AddHttpClient<TreasuryApiClient>(client =>
 {
     client.BaseAddress =
     new Uri("https://apiapex.tesouro.gov.br/aria/");
+});
+
+builder.Services.AddHttpClient<CentralBankApiClient>(client =>
+{
+    client.BaseAddress =
+    new Uri("https://api.bcb.gov.br/dados/serie/bcdata");
 });
 
 // Add services to the container.   
@@ -91,7 +98,6 @@ using (var scope = app.Services.CreateScope())
             "01/2015",
             null,
             CancellationToken.None);
-
     }
 }
 

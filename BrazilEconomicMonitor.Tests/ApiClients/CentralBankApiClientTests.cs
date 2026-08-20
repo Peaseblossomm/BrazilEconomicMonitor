@@ -6,56 +6,45 @@ using System.Text;
 
 namespace BrazilEconomicMonitor.Tests.ApiClients
 {
-    public class TreasuryApiClientTests
+    public class CentralBankApiClientTests
     {
         [Fact]
-        public async Task GetFiscalResultAsync_ReturnsResponse()
+        public async Task GetFiscalResultAsync_returnsResponse()
         {
-            // Arrange
             string fakeJson = """
     {
-        "registros": []
+        fakeCategory: []
     }
     """;
-
             var handler = new FakeHttpMessageHandler(fakeJson);
-
             var httpClient = new HttpClient(handler)
             {
-                BaseAddress = new Uri("https://fake-treasury.test/")
+                BaseAddress = new Uri("https://fake-centralbank.test/")
             };
 
-            var client = new TreasuryApiClient(httpClient);
+            var client = new CentralBankApiClient(httpClient);
 
-            // Act
-            string result = await client.GetFiscalResultAsync(
-                seriesCode: "10.07.1",
-                startDate: "01/2025",
-                endDate: "12/2025");
+            string result = await client.GetFiscalResultsAsync(
+                seriesCode: "4382",
+                startDate: "01/01/2026",
+                endDate: "01/07/2026");
 
-            // Assert
             Assert.Equal(fakeJson, result); //handler provides the expected json
-
             Assert.NotNull(handler.LastRequest);
 
             Assert.Contains(
-                "codigo_da_serie=10.07.1",
+                "dataInicial=01/01/2026",
                 handler.LastRequest.RequestUri!.ToString()); // Client inserts the expected parameters inside the request URL
 
             Assert.Contains(
-                "data_inicio=01/2025",
+                "dataFinal=01/07/2026",
                 handler.LastRequest.RequestUri!.ToString());
 
             Assert.Contains(
-                "data_fim=12/2025",
+                ".sgs.4382",
                 handler.LastRequest.RequestUri!.ToString());
-
             Assert.Contains(
-                "tema=10",
-                handler.LastRequest.RequestUri!.ToString());
-
-            Assert.Contains(
-                "https://apiapex.tesouro.gov.br/aria/v1/series-temporais/custom/resultado-fiscal?data_inicio=01/2025&data_fim=12/2025&tema=10&codigo_da_serie=10.07.1",
+                "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4382/dados?formato=json&dataInicial=01/01/2026&dataFinal=01/07/2026",
                 handler.LastRequest.RequestUri!.ToString());
         }
     }
