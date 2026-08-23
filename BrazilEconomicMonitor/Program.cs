@@ -4,6 +4,7 @@ using BrazilEconomicMonitor.Services;
 using Microsoft.EntityFrameworkCore;
 using BrazilEconomicMonitor.BackgroundJobs;
 using Microsoft.OpenApi;
+using BrazilEconomicMonitor.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,8 @@ builder.Services.AddHttpClient<CentralBankApiClient>(client =>
     new Uri("https://api.bcb.gov.br/dados/serie/bcdata");
 });
 
+builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
+
 // Add services to the container.   
 
 builder.Services.AddControllers();
@@ -32,6 +35,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<TreasuryImportService>();
+
+builder.Services.AddScoped<CentralBankImportService>();
 
 builder.Services.AddScoped<SeedDataCatalogService>();
 

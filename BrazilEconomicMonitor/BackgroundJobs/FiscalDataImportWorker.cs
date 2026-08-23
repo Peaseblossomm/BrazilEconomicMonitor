@@ -32,7 +32,7 @@ namespace BrazilEconomicMonitor.BackgroundJobs
                         scope.ServiceProvider
                             .GetRequiredService<TreasuryImportService>();
 
-                    await importService.AddLatestTreasuryData(
+                    await importService.UpdateTreasuryDataAsync(
                         stoppingToken);
 
                     _logger.LogInformation(

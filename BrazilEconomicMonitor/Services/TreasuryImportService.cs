@@ -3,6 +3,8 @@ using BrazilEconomicMonitor.DTOs;
 using BrazilEconomicMonitor.Infrastructure;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using BrazilEconomicMonitor.Settings;
 
 namespace BrazilEconomicMonitor.Services
 {
@@ -10,16 +12,19 @@ namespace BrazilEconomicMonitor.Services
     {
         private readonly TreasuryApiClient _client;
         private readonly BrazilEconomicMonitorDbContext _db;
+        private readonly int _LookbackMonths;
 
         public TreasuryImportService(
         TreasuryApiClient client,
-        BrazilEconomicMonitorDbContext db)
+        BrazilEconomicMonitorDbContext db,
+        IOptions<ImportSettings> options)
         {
             _client = client;
             _db = db;
+            _LookbackMonths = options.Value.TreasuryLookbackMonths;
         }
 
-        public async Task AddLatestTreasuryData(CancellationToken cancellationToken)
+        public async Task UpdateTreasuryDataAsync(CancellationToken cancellationToken)
         {
             List<Series> series = await _db.Series.Where(s => s.Sources.Name == "Treasury").ToListAsync(cancellationToken);
 
@@ -30,7 +35,7 @@ namespace BrazilEconomicMonitor.Services
                 DateTime? latestDate = await _db.Observations.Where(s => s.Series.Id == serie.Id).Select(o => (DateTime?)o.ObservationDate).MaxAsync(cancellationToken);
 
                 DateTime startDate =
-                   latestDate?.AddMonths(-3)
+                   latestDate?.AddMonths(-_LookbackMonths)
                    ?? new DateTime(2015, 1, 1);
 
                 string apiStartDate =
@@ -75,6 +80,7 @@ namespace BrazilEconomicMonitor.Services
             {
                 throw new Exception($"Series {code} not found.");
             }
+
             foreach (TreasuryRecordDto record in response.Registros)
             {
                 DateTime observationDate =
