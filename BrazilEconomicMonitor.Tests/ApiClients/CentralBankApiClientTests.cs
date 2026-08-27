@@ -19,7 +19,7 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
             var handler = new FakeHttpMessageHandler(fakeJson);
             var httpClient = new HttpClient(handler)
             {
-                BaseAddress = new Uri("https://fake-centralbank.test/")
+                BaseAddress = new Uri("https://fake-centralbank.test")
             };
 
             var client = new CentralBankApiClient(httpClient);
@@ -41,10 +41,10 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
                 handler.LastRequest.RequestUri!.ToString());
 
             Assert.Contains(
-                ".sgs.4382",
+                "bcdata.sgs.4382/dados",
                 handler.LastRequest.RequestUri!.ToString());
             Assert.Contains(
-                "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4382/dados?formato=json&dataInicial=01/01/2026&dataFinal=01/07/2026",
+                "https://fake-centralbank.test/",
                 handler.LastRequest.RequestUri!.ToString());
         }
     }

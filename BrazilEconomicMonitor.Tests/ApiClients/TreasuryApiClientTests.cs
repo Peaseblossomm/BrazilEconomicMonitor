@@ -55,7 +55,7 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
                 handler.LastRequest.RequestUri!.ToString());
 
             Assert.Contains(
-                "https://apiapex.tesouro.gov.br/aria/v1/series-temporais/custom/resultado-fiscal?data_inicio=01/2025&data_fim=12/2025&tema=10&codigo_da_serie=10.07.1",
+                "https://fake-treasury.test/v1/series-temporais/custom/resultado-fiscal?data_inicio=01/2025&data_fim=12/2025&tema=10&codigo_da_serie=10.07.1",
                 handler.LastRequest.RequestUri!.ToString());
         }
     }

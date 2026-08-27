@@ -36,7 +36,7 @@ namespace BrazilEconomicMonitor.Services
                 DateTime startDate = latestDate?.AddMonths(-_LookbackMonths)
                     ?? new DateTime(2015, 1, 1);
 
-                string apiStartDate = startDate.ToString("MM/YYYY");
+                string apiStartDate = startDate.ToString("01/MM/yyyy");
 
                 await ImportDataAsync(
                     serie.Code,
@@ -66,6 +66,7 @@ namespace BrazilEconomicMonitor.Services
 
             if (response == null)
                 return;
+
 
             Series? series = await _db.Series.SingleOrDefaultAsync(s =>
             s.Code == seriesCode && s.Sources.Name == "Central Bank", cancellationToken);

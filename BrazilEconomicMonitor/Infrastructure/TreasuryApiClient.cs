@@ -10,8 +10,8 @@
         }
         public async Task<string> GetFiscalResultAsync(
             string seriesCode,
-            string startDate,
-            string? endDate,
+            string startDate, // format MM/yyyy
+            string? endDate, // format MM/yyyy
             CancellationToken cancellationToken = default)
         {
             var url =

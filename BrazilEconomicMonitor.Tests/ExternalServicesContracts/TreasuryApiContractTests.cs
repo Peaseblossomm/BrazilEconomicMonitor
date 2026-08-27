@@ -18,7 +18,6 @@ namespace BrazilEconomicMonitor.Tests.ExternalServicesContracts
         }
 
         [Fact]
-
         public async Task ApiCallReturnsExpectedStructure()
         {
             var httpClient = new HttpClient()

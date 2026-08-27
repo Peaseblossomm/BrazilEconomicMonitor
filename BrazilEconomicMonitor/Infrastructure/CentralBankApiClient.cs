@@ -11,15 +11,15 @@
 
         public async Task<string> GetFiscalResultsAsync(
                 string seriesCode,
-                string startDate,
-                string endDate,
+                string startDate, // format dd/MM/yyyy
+                string endDate, // format dd/MM/yyyy
                 CancellationToken cancellationToken = default)
         {
             var url =
-                $".sgs.{seriesCode}/dados"+
+                $"bcdata.sgs.{seriesCode}/dados"+
                 $"?formato=json" +
                 $"&dataInicial={startDate}" +
-                $"dataFinal={endDate}";
+                $"&dataFinal={endDate}";
 
             return await _httpClient.GetStringAsync(
                 url,

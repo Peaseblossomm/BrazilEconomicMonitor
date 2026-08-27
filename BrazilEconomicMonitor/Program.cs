@@ -21,7 +21,7 @@ builder.Services.AddHttpClient<TreasuryApiClient>(client =>
 builder.Services.AddHttpClient<CentralBankApiClient>(client =>
 {
     client.BaseAddress =
-    new Uri("https://api.bcb.gov.br/dados/serie/bcdata");
+    new Uri("https://api.bcb.gov.br/dados/serie");
 });
 
 builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
@@ -81,7 +81,14 @@ using (var scope = app.Services.CreateScope())
         Code: "10.09.1",
         SourceId: treasurySourceId,
         cancellationToken: CancellationToken.None);
+
+    await service.SeedSeriesAsync(
+        Name: "Nominal GDP",
+        Code: "4382",
+        SourceId: centralBankSourceId,
+        cancellationToken: CancellationToken.None);
 }
+
 // Populate db with historical data if empty (first start)
 using (var scope = app.Services.CreateScope())
 {
