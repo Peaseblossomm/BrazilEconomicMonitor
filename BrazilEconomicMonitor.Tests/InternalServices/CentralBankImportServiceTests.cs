@@ -18,7 +18,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
     {
 
         [Fact]
-        public async Task ImportDataAsync_ParsedAndStoredToDb()
+        public async Task ImportDataAsync_ParsedAndStoredToDb()   //using the httpClient, gets the json string, parses it and feeds it into the db
         {
             string fakeApiResponseBody = """  
                  [{ "data":"05/01/2025","valor":"11843110.3"},{ "data":"01/02/2025","valor":"11935727.9"},
@@ -81,18 +81,18 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             "",
             CancellationToken.None);
 
-            List<Observation> observation =
+            List<Observation> observations =
             await db.Observations.OrderBy(o =>o.ObservationDate).ToListAsync();
 
             Assert.NotEmpty(db.Observations);
-            Assert.Equal(18, observation.Count);
-            Assert.Equal(observation[0].SeriesId, series.Id);
+            Assert.Equal(18, observations.Count);
+            Assert.Equal(observations[0].SeriesId, series.Id); //parses correctly
 
-            Assert.Equal(new DateTime(2025, 1, 1), observation[0].ObservationDate); // any day of the month will be normalized to the 1st of the MM
-            Assert.Equal(11843110.3m, observation[0].Value);
+            Assert.Equal(new DateTime(2025, 1, 1), observations[0].ObservationDate); // any day of the month should be normalized to the 1st of the MM
+            Assert.Equal(11843110.3m, observations[0].Value);  // value exists and is of decimal type
         }
         [Fact]
-        public async Task UpdateCentralBankDataAsync_()
+        public async Task UpdateCentralBankDataAsync_()   // Tests that the method assigns the correct Uri for the ImportDataAsync method and that older values are updated
         {
             string fakeApiResponseBody = """
                         [{ "data":"05/01/2026","valor":"11843110.3"},{ "data":"01/02/2026","valor":"11935727.9"},
@@ -135,7 +135,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 Code = "4382",
                 SourceId = source.Id,
             };
-            _output.WriteLine(series.SourceId); 
+            Console.WriteLine(series.SourceId); 
 
             db.Series.Add(series);
             await db.SaveChangesAsync();
@@ -165,6 +165,8 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             await service.UpdateCentralBankDataAsync(CancellationToken.None);
 
+            Console.WriteLine(handler.LastRequest.RequestUri);
+
             Assert.NotNull(handler.LastRequest);
 
             Assert.Contains(
@@ -181,7 +183,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             Observation observationToBeUpdated = await db.Observations.SingleAsync(o => o.ObservationDate == new DateTime(2026, 1, 1));
 
-            Assert.Equal(11843110.3m, observationToBeUpdated.Value);
+            Assert.Equal(11843110.3m, observationToBeUpdated.Value); // older data is updated
         }
     }
 }

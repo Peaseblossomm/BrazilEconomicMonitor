@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
+using System.Globalization;
 
 namespace BrazilEconomicMonitor.Services
 {
@@ -39,12 +40,12 @@ namespace BrazilEconomicMonitor.Services
                    ?? new DateTime(2015, 1, 1);
 
                 string apiStartDate =
-                    startDate.ToString("MM/yyyy");
+                    startDate.ToString("MM/yyyy", CultureInfo.InvariantCulture);
 
                 await ImportFiscalAsync(
                     code,
                     apiStartDate,
-                    null,
+                    "",
                     cancellationToken);
             }
         }

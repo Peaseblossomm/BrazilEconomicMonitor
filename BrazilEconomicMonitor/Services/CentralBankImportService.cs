@@ -25,7 +25,9 @@ namespace BrazilEconomicMonitor.Services
             _LookbackMonths = options.Value.CentralBankLookbackMonths;
         }
 
-        public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken)
+        public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken) // provides arguments for the ImportDataAsync method.
+                                                                                          // Looks back x months from the latest observation for each serie of theCentral Bank Api
+                                                                                          // The method is intended to be used for automatic feeding from the Api.
         {
             List<Series> centralBankSeries = await _db.Series.Where(s => s.Sources.Name == "Central Bank").ToListAsync(cancellationToken);
 
@@ -36,17 +38,17 @@ namespace BrazilEconomicMonitor.Services
                 DateTime startDate = latestDate?.AddMonths(-_LookbackMonths)
                     ?? new DateTime(2015, 1, 1);
 
-                string apiStartDate = startDate.ToString("01/MM/yyyy");
+                string apiStartDate = startDate.ToString("01/MM/yyyy",CultureInfo.InvariantCulture);
 
                 await ImportDataAsync(
                     serie.Code,
                     apiStartDate,
-                    "",
+                    "",               // left out empty means up to the latest data
                     cancellationToken
                     );
             }
-
         }
+
         public async Task ImportDataAsync(
             string seriesCode,
             string startDate,
