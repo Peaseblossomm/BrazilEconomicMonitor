@@ -66,7 +66,7 @@ using (var scope = app.Services.CreateScope())
         cancellationToken: CancellationToken.None);
 
     int DerivedValueId = await service.SeedSourcesAsync(
-        Name: "Derived value",
+        Name: "Derived Value",
         SourceDocLink: "",
         cancellationToken: CancellationToken.None);
 

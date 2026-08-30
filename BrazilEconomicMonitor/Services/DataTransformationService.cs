@@ -1,7 +1,9 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
+using BrazilEconomicMonitor.DTOs;
 using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using BrazilEconomicMonitor.DTOs;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 
 namespace BrazilEconomicMonitor.Services;
 
@@ -10,6 +12,7 @@ public class DataTransformationService
     private readonly BrazilEconomicMonitorDbContext _db;
 
     private readonly ILogger<DataTransformationService> _logger;
+
 
     private readonly HashSet<string> _ttmSeriesCodes =  // Raw series for which we apply ttm transformation 
         [
@@ -30,12 +33,7 @@ public class DataTransformationService
         [
             "10.03.1"
         ];
-    
-    private readonly HashSet<string> _PrincipalBalanceOverGdp =
-        [
-            "10.07.1",
-            ""
-        ];
+   
 
     public DataTransformationService(BrazilEconomicMonitorDbContext db, ILogger<DataTransformationService> logger)
 
@@ -186,8 +184,55 @@ public class DataTransformationService
             await _db.SaveChangesAsync(cancellationToken);
         }
     }
-    
 
+    public async Task PrimaryBalanceOverGdp(CancellationToken cancellationToken)
+    {
+        string derivedSeriesCode = "10.07.1_PrimaryBalanceOverGdp";
+        string derivedSeriesName = "Primary Balance Over Gdp";
+
+        Series primaryBalanceOverGdp = await FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
+
+        Observation? latestPrimaryBalanceObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Name == "Primary Balance")
+            .OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
+
+        Observation? latestNominalGdpObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Name == "Nominal GDP")
+            .OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
+
+        if (latestPrimaryBalanceObservation == null)
+        {
+            throw new Exception("No Principal Balance observations are written in db");
+        }
+
+        if (latestNominalGdpObservation == null)
+        {
+            throw new Exception("No Nominal GDP observations are written in db");
+        }
+
+        DateTime commonLatestDate = latestPrimaryBalanceObservation.ObservationDate < latestNominalGdpObservation.ObservationDate
+                                ? latestPrimaryBalanceObservation.ObservationDate : latestNominalGdpObservation.ObservationDate;
+
+        for (int i = 0; i <= 5; i++)
+        {
+            DateTime date = commonLatestDate.AddMonths(-i);
+
+            decimal primBalance = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestPrimaryBalanceObservation.SeriesId).Select(s => s.Value).SingleOrDefaultAsync();
+            decimal nomGdp = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestNominalGdpObservation.SeriesId).Select(s => s.Value).SingleOrDefaultAsync();
+
+            if (primBalance == null || nomGdp == null)
+            {
+                continue;
+            }
+            if (nomGdp == 0m)
+            {
+                continue;
+            }
+            
+            decimal primBalanceGdpRatio = primBalance * 100 / nomGdp;
+
+            await UpsertDerivedObservationAsync(primaryBalanceOverGdp.Id, date, primBalanceGdpRatio, cancellationToken);
+        }
+    }
+    
     private async Task UpsertDerivedObservationAsync(
     int derivedSeriesId,
     DateTime observationDate,
@@ -200,7 +245,7 @@ public class DataTransformationService
                     o =>
                         o.SeriesId == derivedSeriesId &&
                         o.ObservationDate == observationDate,
-                    cancellationToken);
+                        cancellationToken);
 
         if (existing == null)
         {
@@ -217,6 +262,7 @@ public class DataTransformationService
         {
             existing.Value = value;
         }
+        await _db.SaveChangesAsync(cancellationToken);
     }
     
     public async Task<Series> FindOrCreateNewDerivedSeries(string derivedSeriesCode, string derivedSeriesName, CancellationToken cancellationToken)

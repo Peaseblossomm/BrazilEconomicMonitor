@@ -6,7 +6,7 @@
         public int SeriesId { get; set; }
         public Series Series { get; set; } = null!;
         public DateTime ObservationDate { get; set; }
-        public decimal Value { get; set; }
+        public decimal Value { get; set; }      
 
     }
 }
