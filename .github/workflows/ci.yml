@@ -2,10 +2,10 @@ name: Brazil Economic Monitor CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
   build-and-test:

@@ -215,19 +215,15 @@ public class DataTransformationService
         {
             DateTime date = commonLatestDate.AddMonths(-i);
 
-            decimal primBalance = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestPrimaryBalanceObservation.SeriesId).Select(s => s.Value).SingleOrDefaultAsync();
-            decimal nomGdp = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestNominalGdpObservation.SeriesId).Select(s => s.Value).SingleOrDefaultAsync();
+            Observation? primBalance = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestPrimaryBalanceObservation.SeriesId).SingleOrDefaultAsync();
+            Observation? nomGdp = await _db.Observations.Where(o => o.ObservationDate == date && o.SeriesId == latestNominalGdpObservation.SeriesId).SingleOrDefaultAsync();
 
             if (primBalance == null || nomGdp == null)
             {
                 continue;
             }
-            if (nomGdp == 0m)
-            {
-                continue;
-            }
             
-            decimal primBalanceGdpRatio = primBalance * 100 / nomGdp;
+            decimal primBalanceGdpRatio = primBalance.Value * 100m / nomGdp.Value;
 
             await UpsertDerivedObservationAsync(primaryBalanceOverGdp.Id, date, primBalanceGdpRatio, cancellationToken);
         }
