@@ -12,11 +12,11 @@ using System.Text;
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
 {
-    public class DataTransformationService_PrimBalanceOverNomGdpTest: IAsyncLifetime
+    public class PrimaryBalanceOverNomGdpTest: IAsyncLifetime
     {
         private SqliteConnection _connection = null!;
         private BrazilEconomicMonitorDbContext _db = null!;
-        private DataTransformationService _service = null!;
+        private PrimaryBalanceOverGdpTransformationService _service = null!;
 
         public async Task InitializeAsync()
         {
@@ -31,9 +31,11 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             _db = new BrazilEconomicMonitorDbContext(dbOptions);
             await _db.Database.EnsureCreatedAsync();
 
-            ILogger<DataTransformationService> logger = NullLogger<DataTransformationService>.Instance;
+            ILogger<PrimaryBalanceOverGdpTransformationService> logger = NullLogger<PrimaryBalanceOverGdpTransformationService>.Instance;
 
-            _service = new DataTransformationService(_db, logger);
+            HelperServices helperServices = new HelperServices(_db);
+
+            _service = new PrimaryBalanceOverGdpTransformationService(_db, logger, helperServices);
         }
         public async Task DisposeAsync()
         {
@@ -147,4 +149,3 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         }
     }
 }
-d

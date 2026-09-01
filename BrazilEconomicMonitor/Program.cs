@@ -40,6 +40,8 @@ builder.Services.AddScoped<CentralBankImportService>();
 
 builder.Services.AddScoped<SeedDataCatalogService>();
 
+builder.Services.AddScoped<HelperServices>();
+
 builder.Services.AddHostedService<FiscalDataImportWorker>();
 
 var app = builder.Build();
@@ -105,10 +107,20 @@ using (var scope = app.Services.CreateScope())
             scope.ServiceProvider
                 .GetRequiredService<TreasuryImportService>();
 
+        var CentralBankImportService =
+            scope.ServiceProvider
+                .GetRequiredService<CentralBankImportService>();
+
         await treasuryImportService.ImportFiscalAsync(
             "10.07.1",
             "01/2015",
             null,
+            CancellationToken.None);
+
+        await CentralBankImportService.ImportDataAsync(
+            "4382",
+            "01/01/2015",
+            "",
             CancellationToken.None);
     }
 }
