@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 using System.Globalization;
 
-namespace BrazilEconomicMonitor.Services
+namespace BrazilEconomicMonitor.Services.InternalServices
 {
     public class TreasuryImportService
     {
@@ -22,7 +22,7 @@ namespace BrazilEconomicMonitor.Services
         {
             _client = client;
             _db = db;
-            _LookbackMonths = options.Value.TreasuryLookbackMonths;
+            _LookbackMonths = options.Value.LookbackMonths;
         }
 
         public async Task UpdateTreasuryDataAsync(CancellationToken cancellationToken)

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using BrazilEconomicMonitor.Domain.Entities;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
-using BrazilEconomicMonitor.Services;
+using BrazilEconomicMonitor.Services.InternalServices;
 
 
 namespace BrazilEconomicMonitor.Tests.InternalServices

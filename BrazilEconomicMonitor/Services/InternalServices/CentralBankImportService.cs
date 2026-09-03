@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 using System.Globalization;
 
-namespace BrazilEconomicMonitor.Services
+namespace BrazilEconomicMonitor.Services.InternalServices
 {
     public class CentralBankImportService
     {
@@ -22,7 +22,7 @@ namespace BrazilEconomicMonitor.Services
         {
             _client = client;
             _db = db;
-            _LookbackMonths = options.Value.CentralBankLookbackMonths;
+            _LookbackMonths = options.Value.LookbackMonths;
         }
 
         public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken) // provides arguments for the ImportDataAsync method.

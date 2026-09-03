@@ -1,12 +1,13 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.DTOs;
 using BrazilEconomicMonitor.Infrastructure;
+using BrazilEconomicMonitor.Settings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using BrazilEconomicMonitor.Services;
 
 
-namespace BrazilEconomicMonitor.Services;
+namespace BrazilEconomicMonitor.Services.InternalServices;
 
 public class TtmTransformationService
 {
@@ -16,18 +17,22 @@ public class TtmTransformationService
 
     private readonly HelperServices _helperServices;
 
+    private readonly int _LookbackMonths;
+
 
     private readonly HashSet<string> _ttmSeriesCodes =  // Raw series for which we apply ttm transformation 
         [
             "10.07.1",
             "10.09.1"
         ];
-    public TtmTransformationService( BrazilEconomicMonitorDbContext db, ILogger<TtmTransformationService> logger, HelperServices helperServices)
+    public TtmTransformationService( BrazilEconomicMonitorDbContext db, ILogger<TtmTransformationService> logger,
+        HelperServices helperServices, IOptions<ImportSettings> options)
 
     {
         _db = db;
         _logger = logger;
         _helperServices = helperServices;
+        _LookbackMonths = options.Value.LookbackMonths;
     }
 
     public async Task CalculateTtmAsync(DateTime startDate, CancellationToken cancellationToken)
@@ -77,6 +82,8 @@ public class TtmTransformationService
                 await _helperServices.UpsertDerivedObservationAsync(ttmSeries.Id, last.ObservationDate, ttmSum, cancellationToken);
             }
         await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Saved Ttm observations successfully! Series transformed: {series}",string.Join(",",_ttmSeriesCodes));
         }
     }
 
@@ -84,7 +91,11 @@ public class TtmTransformationService
     {
         DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
 
+        _logger.LogInformation("Started seeding the database with Ttm transformations. Series transformed: {series}", string.Join(",",_ttmSeriesCodes));
+
         await CalculateTtmAsync(startDate, cancellationToken);
+
+        _logger.LogInformation("Seeded ttm observations Successfully");
     }
 
     public async Task UpdateTtmAsync(CancellationToken cancellationToken)
@@ -103,7 +114,7 @@ public class TtmTransformationService
                 .Select(o => o.ObservationDate)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            DateTime startDate = latestDate.AddMonths(-18); // calculate the ttm for the latest 6 months
+            DateTime startDate = latestDate.AddMonths(-(_LookbackMonths+12)); // calculate the ttm for the latest "Lookback" months, IOptions
 
             await CalculateTtmAsync(startDate, cancellationToken);
         }

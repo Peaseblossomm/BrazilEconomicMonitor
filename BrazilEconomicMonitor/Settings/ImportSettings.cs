@@ -2,7 +2,6 @@
 {
     public class ImportSettings
     {
-        public int TreasuryLookbackMonths { get; set; }
-        public int CentralBankLookbackMonths { get; set; }
+        public int LookbackMonths { get; set; }
     }
 }

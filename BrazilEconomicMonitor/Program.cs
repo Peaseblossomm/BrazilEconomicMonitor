@@ -1,10 +1,10 @@
 using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
-using BrazilEconomicMonitor.Services;
 using Microsoft.EntityFrameworkCore;
 using BrazilEconomicMonitor.BackgroundJobs;
 using Microsoft.OpenApi;
 using BrazilEconomicMonitor.Settings;
+using BrazilEconomicMonitor.Services.InternalServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +34,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSwaggerGen();
 
+
 builder.Services.AddScoped<TreasuryImportService>();
 
 builder.Services.AddScoped<CentralBankImportService>();
@@ -42,7 +43,17 @@ builder.Services.AddScoped<SeedDataCatalogService>();
 
 builder.Services.AddScoped<HelperServices>();
 
+builder.Services.AddScoped<TtmTransformationService>();
+
+builder.Services.AddScoped<PrimaryBalanceOverGdpTransformationService>();
+
+builder.Services.AddScoped<ForecastError12MonthsTransformationService>();
+
+builder.Services.AddScoped<YoyTransformationService>();
+
+
 builder.Services.AddHostedService<FiscalDataImportWorker>();
+
 
 var app = builder.Build();
 

@@ -1,7 +1,7 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
 using BrazilEconomicMonitor.Settings;
-using BrazilEconomicMonitor.Services;
+using BrazilEconomicMonitor.Services.InternalServices;
 using BrazilEconomicMonitor.Tests.ExternalDependencies;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

@@ -1,8 +1,10 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using BrazilEconomicMonitor.Settings;
 
-namespace BrazilEconomicMonitor.Services
+namespace BrazilEconomicMonitor.Services.InternalServices
 {
     public class YoyTransformationService
     {
@@ -12,19 +14,24 @@ namespace BrazilEconomicMonitor.Services
 
         private readonly HelperServices _helperServices;
 
+        private readonly int _LookbackMonths;
+
         private readonly HashSet<string> _YoYSeriesCodes =   // Raw series for which we apply YoY transformationh
            [
                "10.07.1",
                 "10.09.1"
            ];
-        public YoyTransformationService(BrazilEconomicMonitorDbContext db, ILogger<YoyTransformationService> logger, HelperServices helperServices)
+        public YoyTransformationService(BrazilEconomicMonitorDbContext db, ILogger<YoyTransformationService> logger,
+            HelperServices helperServices, IOptions<ImportSettings> options)
 
         {
             _db = db;
             _logger = logger;
+            _helperServices = helperServices;
+            _LookbackMonths = options.Value.LookbackMonths;
         }
 
-        public async Task UpdateYoYAsync(CancellationToken cancellationToken)
+        public async Task CalculateYoYAsync(DateTime startDate, CancellationToken cancellationToken)
         {
             foreach (string code in _YoYSeriesCodes)
             {
@@ -36,7 +43,7 @@ namespace BrazilEconomicMonitor.Services
                 List<Observation> observations =
                     await _db.Observations
                     .Where(o => o.SeriesId == inputSeries.Id)
-                    .OrderByDescending(o => o.ObservationDate)
+                    .OrderByDescending(o => o.ObservationDate >= startDate)
                     .Take(24)
                     .ToListAsync(cancellationToken);
 
@@ -64,12 +71,25 @@ namespace BrazilEconomicMonitor.Services
                         code,
                         current.ObservationDate);
                     }
+
                     decimal YoYValue = ((current.Value / previousYear.Value) - 1) * 100;
 
                     await _helperServices.UpsertDerivedObservationAsync(YoYSeries.Id, current.ObservationDate, YoYValue, cancellationToken);
                 }
                 await _db.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation("Saved YoY observations successfully! Series transformed: {series}", string.Join(",", _YoYSeriesCodes));
             }
+        }
+
+        public async Task SeedYoyAsync(CancellationToken cancellationToken)
+        {
+            DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
+
+            await CalculateYoYAsync(startDate, cancellationToken);
+
+            _logger.LogInformation("Seeded YoY observations successfully!");
+
         }
     }
     

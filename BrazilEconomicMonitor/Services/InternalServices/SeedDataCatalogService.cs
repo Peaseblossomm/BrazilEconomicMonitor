@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace BrazilEconomicMonitor.Services
+namespace BrazilEconomicMonitor.Services.InternalServices
 {
     public class SeedDataCatalogService
     {

@@ -2,19 +2,22 @@
 using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrazilEconomicMonitor.Services
+namespace BrazilEconomicMonitor.Services.InternalServices
 {
     public class HelperServices
     {
         private readonly BrazilEconomicMonitorDbContext _db;
 
-        public HelperServices(BrazilEconomicMonitorDbContext db)
+        private readonly ILogger _logger;
+
+        public HelperServices(BrazilEconomicMonitorDbContext db, ILogger logger)
 
             {
                 _db = db;
+                _logger = logger;
             }
 
-        public async Task UpsertDerivedObservationAsync(
+        public async Task UpsertDerivedObservationAsync( // ***** PERFORM _db.SaveChangesAsync AFTERWARDS ******
             int derivedSeriesId,
             DateTime observationDate,
             decimal value,
@@ -38,12 +41,12 @@ namespace BrazilEconomicMonitor.Services
                 };
 
                 _db.Observations.Add(observation);
+
             }
             else if (existing.Value != value)
             {
                 existing.Value = value;
             }
-            await _db.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<Series> FindOrCreateNewDerivedSeries(string derivedSeriesCode, string derivedSeriesName, CancellationToken cancellationToken)
@@ -73,7 +76,10 @@ namespace BrazilEconomicMonitor.Services
 
                 _db.Series.Add(derivedSeries);
                 await _db.SaveChangesAsync(cancellationToken);
+
+                _logger.LogInformation("New derived series {DerivedSeries}(code:{code}) created!", derivedSeries.Name, derivedSeriesCode);
             }
+
             return derivedSeries;
         }
     }

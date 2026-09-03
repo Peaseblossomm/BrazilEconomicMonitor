@@ -1,10 +1,12 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
-using BrazilEconomicMonitor.Services;
+using BrazilEconomicMonitor.Services.InternalServices;
+using BrazilEconomicMonitor.Settings;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -35,7 +37,13 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             HelperServices helperServices = new HelperServices(_db);
 
-            _service = new PrimaryBalanceOverGdpTransformationService(_db, logger, helperServices);
+            IOptions<ImportSettings> options = Options.Create(new ImportSettings
+            {
+                TreasuryLookbackMonths = 6,
+                CentralBankLookbackMonths = 6
+            });
+
+            _service = new PrimaryBalanceOverGdpTransformationService(_db, logger, helperServices, options);
         }
         public async Task DisposeAsync()
         {
@@ -135,7 +143,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         $"Date3: {observations[3].ObservationDate:yyyy-MM-dd}, " +
         $"Date4: {observations[4].ObservationDate:yyyy-MM-dd}, ");
 
-            await _service.PrimaryBalanceOverGdp(CancellationToken.None);
+            await _service.UpdatePrimaryBalanceOverGdpAsync(CancellationToken.None);
 
             List<Observation> derivedObservations = await _db.Observations.Where(o => o.Series.IsRaw == false).OrderByDescending(o => o.ObservationDate).ToListAsync();
 

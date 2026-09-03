@@ -1,4 +1,4 @@
-﻿using BrazilEconomicMonitor.Services;
+﻿using BrazilEconomicMonitor.Services.InternalServices;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrazilEconomicMonitor.BackgroundJobs
@@ -23,21 +23,52 @@ namespace BrazilEconomicMonitor.BackgroundJobs
 
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
+
+                _logger.LogInformation(
+                                        "Import and transformation cycle started at {Time}",
+                                        DateTimeOffset.Now);
                 try
                 {
                     await using var scope =
                         _scopeFactory.CreateAsyncScope();
 
-                    var importService =
+                    var treasuryImportService =
                         scope.ServiceProvider
                             .GetRequiredService<TreasuryImportService>();
 
-                    await importService.UpdateTreasuryDataAsync(
+                    var centralBankImportService =
+                        scope.ServiceProvider
+                            .GetRequiredService<CentralBankImportService>();
+
+                    var ttmTransformationService =
+                        scope.ServiceProvider
+                            .GetRequiredService<TtmTransformationService>();
+
+                    var primaryBalanceOverGdpTransformationService =
+                        scope.ServiceProvider
+                            .GetRequiredService<PrimaryBalanceOverGdpTransformationService>();
+
+                    var ForecastError12MonthsTransformationGdpService =
+                        scope.ServiceProvider
+                            .GetRequiredService<ForecastError12MonthsTransformationService>();
+
+                    var YoyTransformationGdpService =
+                        scope.ServiceProvider
+                            .GetRequiredService<YoyTransformationService>();
+
+
+                    await treasuryImportService.UpdateTreasuryDataAsync(
                         stoppingToken);
 
-                    _logger.LogInformation(
-                                        "Fiscal import of data completed at {Time}",
-                                        DateTimeOffset.Now);
+                    await centralBankImportService.UpdateCentralBankDataAsync(
+                        stoppingToken);
+
+                    await ttmTransformationService.UpdateTtmAsync(
+                        stoppingToken);
+
+                    await primaryBalanceOverGdpTransformationService.UpdatePrimaryBalanceOverGdpAsync(
+                        stoppingToken);
+
                 }
                 catch (OperationCanceledException)
                     when (stoppingToken.IsCancellationRequested)
