@@ -95,7 +95,7 @@ public class TtmTransformationService
 
         await CalculateTtmAsync(startDate, cancellationToken);
 
-        _logger.LogInformation("Seeded ttm observations Successfully");
+        _logger.LogInformation("Seeded ttm observations since 1 jan 2010 Successfully");
     }
 
     public async Task UpdateTtmAsync(CancellationToken cancellationToken)

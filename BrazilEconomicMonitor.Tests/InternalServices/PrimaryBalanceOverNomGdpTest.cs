@@ -35,12 +35,13 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             ILogger<PrimaryBalanceOverGdpTransformationService> logger = NullLogger<PrimaryBalanceOverGdpTransformationService>.Instance;
 
-            HelperServices helperServices = new HelperServices(_db);
+            ILogger<HelperServices> helpLogger = NullLogger<HelperServices>.Instance;
+
+            HelperServices helperServices = new HelperServices(_db, helpLogger);
 
             IOptions<ImportSettings> options = Options.Create(new ImportSettings
             {
-                TreasuryLookbackMonths = 6,
-                CentralBankLookbackMonths = 6
+                LookbackMonths = 6
             });
 
             _service = new PrimaryBalanceOverGdpTransformationService(_db, logger, helperServices, options);

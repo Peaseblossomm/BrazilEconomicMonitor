@@ -98,7 +98,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
             await CalculatePrimaryBalanceOverGdpAsync(startDate, cancellationToken);
 
-            _logger.LogInformation("Seeded PrimaryBalance/NominalGdp observations successfully!");
+            _logger.LogInformation("Seeded PrimaryBalance/NominalGdp observations since 1 jan 2010 successfully!");
         }
 
         public async Task UpdatePrimaryBalanceOverGdpAsync(CancellationToken cancellationToken)

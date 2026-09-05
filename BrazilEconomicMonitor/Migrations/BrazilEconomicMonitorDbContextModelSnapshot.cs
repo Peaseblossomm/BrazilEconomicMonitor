@@ -47,6 +47,7 @@ namespace BrazilEconomicMonitor.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Code")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsRaw")
@@ -56,16 +57,33 @@ namespace BrazilEconomicMonitor.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Source")
+                    b.Property<int>("SourceId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("Series");
+                });
+
+            modelBuilder.Entity("BrazilEconomicMonitor.Domain.Entities.Sources", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DocLink")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Source", "Code")
-                        .IsUnique();
-
-                    b.ToTable("Series");
+                    b.ToTable("Sources");
                 });
 
             modelBuilder.Entity("BrazilEconomicMonitor.Domain.Entities.Observation", b =>
@@ -81,7 +99,23 @@ namespace BrazilEconomicMonitor.Migrations
 
             modelBuilder.Entity("BrazilEconomicMonitor.Domain.Entities.Series", b =>
                 {
+                    b.HasOne("BrazilEconomicMonitor.Domain.Entities.Sources", "Sources")
+                        .WithMany("Series")
+                        .HasForeignKey("SourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sources");
+                });
+
+            modelBuilder.Entity("BrazilEconomicMonitor.Domain.Entities.Series", b =>
+                {
                     b.Navigation("Observations");
+                });
+
+            modelBuilder.Entity("BrazilEconomicMonitor.Domain.Entities.Sources", b =>
+                {
+                    b.Navigation("Series");
                 });
 #pragma warning restore 612, 618
         }

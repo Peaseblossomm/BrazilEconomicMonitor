@@ -48,11 +48,11 @@ namespace BrazilEconomicMonitor.BackgroundJobs
                         scope.ServiceProvider
                             .GetRequiredService<PrimaryBalanceOverGdpTransformationService>();
 
-                    var ForecastError12MonthsTransformationGdpService =
+                    var forecastError12MonthsTransformationService =
                         scope.ServiceProvider
                             .GetRequiredService<ForecastError12MonthsTransformationService>();
 
-                    var YoyTransformationGdpService =
+                    var yoyTransformationService =
                         scope.ServiceProvider
                             .GetRequiredService<YoyTransformationService>();
 
@@ -68,6 +68,12 @@ namespace BrazilEconomicMonitor.BackgroundJobs
 
                     await primaryBalanceOverGdpTransformationService.UpdatePrimaryBalanceOverGdpAsync(
                         stoppingToken);
+                    
+                    await forecastError12MonthsTransformationService.UpdateForecastError12MonthsAsync(
+                        stoppingToken);
+
+                    await yoyTransformationService.UpdateYoyAsync(
+                        stoppingToken);
 
                 }
                 catch (OperationCanceledException)
@@ -79,8 +85,7 @@ namespace BrazilEconomicMonitor.BackgroundJobs
                 {
                     _logger.LogError(
                         ex,     
-                        "Fiscal import failed.");
-
+                        "Program stopped.");
                 }
             }
         }

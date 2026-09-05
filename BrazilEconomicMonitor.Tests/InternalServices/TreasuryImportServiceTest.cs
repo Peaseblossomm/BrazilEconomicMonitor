@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
 {
@@ -73,10 +75,11 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             IOptions<ImportSettings> options = Options.Create(new ImportSettings
             {
-                CentralBankLookbackMonths = 3
+                LookbackMonths = 3
             });
+            ILogger<TreasuryImportService> logger = NullLogger<TreasuryImportService>.Instance;
 
-            var service = new TreasuryImportService(client, db, options);
+            var service = new TreasuryImportService(client, db, options, logger);
 
             await service.ImportFiscalAsync(
                 "666",
@@ -164,10 +167,12 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             IOptions<ImportSettings> options = Options.Create(new ImportSettings
             {
-                TreasuryLookbackMonths = 3
+                LookbackMonths = 3
             });
 
-            var service = new TreasuryImportService(client, db, options);
+            ILogger<TreasuryImportService> logger = NullLogger<TreasuryImportService>.Instance;
+
+            var service = new TreasuryImportService(client, db, options, logger);
 
             await service.UpdateTreasuryDataAsync(CancellationToken.None);
 

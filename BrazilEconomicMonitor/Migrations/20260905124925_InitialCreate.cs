@@ -12,19 +12,39 @@ namespace BrazilEconomicMonitor.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "Sources",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    DocLink = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sources", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Series",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Code = table.Column<string>(type: "TEXT", nullable: true),
-                    Source = table.Column<string>(type: "TEXT", nullable: false),
-                    IsRaw = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Code = table.Column<string>(type: "TEXT", nullable: false),
+                    IsRaw = table.Column<bool>(type: "INTEGER", nullable: false),
+                    SourceId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Series", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Series_Sources_SourceId",
+                        column: x => x.SourceId,
+                        principalTable: "Sources",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -55,9 +75,9 @@ namespace BrazilEconomicMonitor.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Series_Source_Code",
+                name: "IX_Series_SourceId_Code",
                 table: "Series",
-                columns: new[] { "Source", "Code" },
+                columns: new[] { "SourceId", "Code" },
                 unique: true);
         }
 
@@ -69,6 +89,9 @@ namespace BrazilEconomicMonitor.Migrations
 
             migrationBuilder.DropTable(
                 name: "Series");
+
+            migrationBuilder.DropTable(
+                name: "Sources");
         }
     }
 }

@@ -18,7 +18,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
         private readonly HashSet<string> _ForecastError12Months =
         [
-            "10.03.1"
+
         ];
 
         public ForecastError12MonthsTransformationService(BrazilEconomicMonitorDbContext db, ILogger<ForecastError12MonthsTransformationService> logger,
@@ -50,7 +50,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                 Series error12MonthsSerie = await _helperServices.FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
 
-                for (int i = 0; i < observations.Count; i++)
+                for (int i = 0; i < observations.Count - 12; i++)
                 {
                     Observation current = observations[i];
                     Observation previousYear = observations[i + 12];
@@ -83,6 +83,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 "Series transformed: {series}", string.Join(",", _ForecastError12Months));
 
             await CalculateForecastError12MonthsAsync(startDate, cancellationToken);
+
+            _logger.LogInformation("Seeded ForecastError12Months observations since 1 jan 2010 successfully!");
         }
 
         public async Task UpdateForecastError12MonthsAsync(CancellationToken cancellationToken)

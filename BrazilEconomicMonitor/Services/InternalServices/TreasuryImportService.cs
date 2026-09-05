@@ -14,15 +14,18 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         private readonly TreasuryApiClient _client;
         private readonly BrazilEconomicMonitorDbContext _db;
         private readonly int _LookbackMonths;
+        private readonly ILogger<TreasuryImportService> _logger;
 
         public TreasuryImportService(
         TreasuryApiClient client,
         BrazilEconomicMonitorDbContext db,
-        IOptions<ImportSettings> options)
+        IOptions<ImportSettings> options,
+        ILogger<TreasuryImportService> logger)
         {
             _client = client;
             _db = db;
             _LookbackMonths = options.Value.LookbackMonths;
+            _logger = logger;
         }
 
         public async Task UpdateTreasuryDataAsync(CancellationToken cancellationToken)
@@ -37,7 +40,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                 DateTime startDate =
                    latestDate?.AddMonths(-_LookbackMonths)
-                   ?? new DateTime(2015, 1, 1);
+                   ?? new DateTime(2010, 1, 1);
 
                 string apiStartDate =
                     startDate.ToString("MM/yyyy", CultureInfo.InvariantCulture);
@@ -47,6 +50,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     apiStartDate,
                     "",
                     cancellationToken);
+
+                _logger.LogInformation("Updated latest data for Treasury series {serie} up to {latestDate}", serie.Name, latestDate);
             }
         }
 
@@ -56,7 +61,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         string? endDate,
             CancellationToken cancellationToken)
         {
-            var json = await _client.GetFiscalResultAsync(
+            string json = await _client.GetFiscalResultAsync(
             code,
             startDate,
             endDate,
@@ -111,6 +116,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 }
 
                 await _db.SaveChangesAsync(cancellationToken);
+
             }
         }
     }

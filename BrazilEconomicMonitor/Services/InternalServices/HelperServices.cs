@@ -10,7 +10,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
         private readonly ILogger _logger;
 
-        public HelperServices(BrazilEconomicMonitorDbContext db, ILogger logger)
+        public HelperServices(BrazilEconomicMonitorDbContext db, ILogger<HelperServices> logger)
 
             {
                 _db = db;

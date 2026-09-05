@@ -10,6 +10,8 @@ using BrazilEconomicMonitor.Domain.Entities;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 using BrazilEconomicMonitor.Services.InternalServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
@@ -70,12 +72,13 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             IOptions<ImportSettings> options = Options.Create(new ImportSettings
             {
-                CentralBankLookbackMonths = 6
+                LookbackMonths = 6
             });
+            ILogger<CentralBankImportService> logger = NullLogger<CentralBankImportService>.Instance;
 
-            var service = new CentralBankImportService(client, db, options);
+            var service = new CentralBankImportService(client, db, options, logger);
 
-            await service.ImportDataAsync(
+            await service.ImportFiscalAsync(
             "4382",
             "01/2025",
             "",
@@ -158,10 +161,12 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             IOptions<ImportSettings> options = Options.Create(new ImportSettings
             {
-                CentralBankLookbackMonths = 6
+                LookbackMonths = 6
             });
 
-            var service = new CentralBankImportService(client, db, options);
+            ILogger<CentralBankImportService> logger = NullLogger<CentralBankImportService>.Instance;
+
+            var service = new CentralBankImportService(client, db, options, logger);
 
             await service.UpdateCentralBankDataAsync(CancellationToken.None);
 

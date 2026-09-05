@@ -19,7 +19,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         private readonly HashSet<string> _YoYSeriesCodes =   // Raw series for which we apply YoY transformationh
            [
                "10.07.1",
-                "10.09.1"
+                "10.09.1",
+                "4382"
            ];
         public YoyTransformationService(BrazilEconomicMonitorDbContext db, ILogger<YoyTransformationService> logger,
             HelperServices helperServices, IOptions<ImportSettings> options)
@@ -31,7 +32,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             _LookbackMonths = options.Value.LookbackMonths;
         }
 
-        public async Task CalculateYoYAsync(DateTime startDate, CancellationToken cancellationToken)
+        public async Task CalculateYoyAsync(DateTime startDate, CancellationToken cancellationToken)
         {
             foreach (string code in _YoYSeriesCodes)
             {
@@ -44,7 +45,6 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     await _db.Observations
                     .Where(o => o.SeriesId == inputSeries.Id)
                     .OrderByDescending(o => o.ObservationDate >= startDate)
-                    .Take(24)
                     .ToListAsync(cancellationToken);
 
                 string derivedSeriesCode = code + "_YoY";
@@ -56,20 +56,22 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 {
 
                     Observation current = observations[i];
-                    Observation previousYear = observations[i - 12];
+                    Observation previousYear = observations[i + 12];
 
-                    if (observations[i - 12].Value == 0)
+                    if (previousYear.Value == 0)
                     {
                         throw new DivideByZeroException($"Cannot calculate YoY for {current.ObservationDate:MM/yyyy}" +
                         $"because the value for {previousYear.ObservationDate:MM/yyyy} is zero");
                     }
 
-                    if (current.ObservationDate != previousYear.ObservationDate.AddYears(1))
+                    if (current.ObservationDate != previousYear.ObservationDate.AddYears(-1))
                     {
                         _logger.LogWarning(
                         "YoY calculation skipped for {Code} at {Date}: previous-year month is missing.",
                         code,
                         current.ObservationDate);
+
+                        continue;
                     }
 
                     decimal YoYValue = ((current.Value / previousYear.Value) - 1) * 100;
@@ -86,11 +88,34 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         {
             DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
 
-            await CalculateYoYAsync(startDate, cancellationToken);
+            _logger.LogInformation("Seeded YoY observations since 1 jan 2010 successfully! Series transformed: {series}", string.Join(",", _YoYSeriesCodes));
 
-            _logger.LogInformation("Seeded YoY observations successfully!");
+            await CalculateYoyAsync(startDate, cancellationToken);
+
+            _logger.LogInformation("Seeded YoY observations since 1 jan 2010 successfully!");
 
         }
-    }
-    
+
+        public async Task UpdateYoyAsync(CancellationToken cancellationToken)
+        {
+            foreach (string code in _YoYSeriesCodes)
+            {
+                Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
+
+                if (inputSeries == null)
+                    continue;
+
+                DateTime latestDate =
+                    await _db.Observations
+                    .Where(o => o.SeriesId == inputSeries.Id)
+                    .OrderByDescending(o => o.ObservationDate)
+                    .Select(o => o.ObservationDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                DateTime startDate = latestDate.AddMonths(-(_LookbackMonths + 12)); // calculate the ttm for the latest "Lookback" months, IOptions
+
+                await CalculateYoyAsync(startDate, cancellationToken);
+            }
+        }
+    }    
 }

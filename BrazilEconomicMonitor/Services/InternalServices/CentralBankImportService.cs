@@ -14,15 +14,18 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         private readonly CentralBankApiClient _client;
         private readonly BrazilEconomicMonitorDbContext _db;
         private readonly int _LookbackMonths;
+        private readonly ILogger<CentralBankImportService> _logger;
 
         public CentralBankImportService(
             CentralBankApiClient client,
             BrazilEconomicMonitorDbContext db,
-            IOptions<ImportSettings> options)
+            IOptions<ImportSettings> options,
+            ILogger<CentralBankImportService> logger)
         {
             _client = client;
             _db = db;
             _LookbackMonths = options.Value.LookbackMonths;
+            _logger = logger;
         }
 
         public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken) // provides arguments for the ImportDataAsync method.
@@ -36,20 +39,22 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 DateTime? latestDate = await _db.Observations.Where(s => s.SeriesId == serie.Id).Select(o => (DateTime?)o.ObservationDate).MaxAsync(cancellationToken);
 
                 DateTime startDate = latestDate?.AddMonths(-_LookbackMonths)
-                    ?? new DateTime(2015, 1, 1);
+                    ?? new DateTime(2010, 1, 1);
 
                 string apiStartDate = startDate.ToString("01/MM/yyyy",CultureInfo.InvariantCulture);
 
-                await ImportDataAsync(
+                await ImportFiscalAsync(
                     serie.Code,
                     apiStartDate,
                     "",               // left out empty means up to the latest data
                     cancellationToken
                     );
+
+                _logger.LogInformation("Updated latest data for Central Bank series {serie} up to {latestDate}", serie.Name, latestDate);
             }
         }
 
-        public async Task ImportDataAsync(
+        public async Task ImportFiscalAsync(
             string seriesCode,
             string startDate,
             string endDate,

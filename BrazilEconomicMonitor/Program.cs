@@ -1,10 +1,11 @@
+using BrazilEconomicMonitor.BackgroundJobs;
 using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using BrazilEconomicMonitor.BackgroundJobs;
-using Microsoft.OpenApi;
-using BrazilEconomicMonitor.Settings;
 using BrazilEconomicMonitor.Services.InternalServices;
+using BrazilEconomicMonitor.Services.QueryServices;
+using BrazilEconomicMonitor.Settings;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,7 @@ builder.Services.AddHttpClient<TreasuryApiClient>(client =>
 builder.Services.AddHttpClient<CentralBankApiClient>(client =>
 {
     client.BaseAddress =
-    new Uri("https://api.bcb.gov.br/dados/serie");
+    new Uri("https://api.bcb.gov.br/dados/serie/");
 });
 
 builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
@@ -50,6 +51,9 @@ builder.Services.AddScoped<PrimaryBalanceOverGdpTransformationService>();
 builder.Services.AddScoped<ForecastError12MonthsTransformationService>();
 
 builder.Services.AddScoped<YoyTransformationService>();
+
+
+builder.Services.AddScoped<DashboardQueryService>();
 
 
 builder.Services.AddHostedService<FiscalDataImportWorker>();
@@ -85,7 +89,7 @@ using (var scope = app.Services.CreateScope())
 
     await service.SeedSeriesAsync(
         Name: "Primary Balance",
-        Code: "10.07.1_",
+        Code: "10.07.1",
         SourceId: treasurySourceId,
         cancellationToken: CancellationToken.None);
 
@@ -100,15 +104,15 @@ using (var scope = app.Services.CreateScope())
         Code: "4382",
         SourceId: centralBankSourceId,
         cancellationToken: CancellationToken.None);
-}
+} 
 
-// Populate db with historical data if empty (first start)
+// Populate db with historical data if empty (first start) or with new additions latter
 using (var scope = app.Services.CreateScope())
 {
     var db =
         scope.ServiceProvider
             .GetRequiredService<BrazilEconomicMonitorDbContext>();
-
+ 
     bool hasObservations =
         await db.Observations.AnyAsync();
 
@@ -122,17 +126,44 @@ using (var scope = app.Services.CreateScope())
             scope.ServiceProvider
                 .GetRequiredService<CentralBankImportService>();
 
+        var ttmTransformationService =
+            scope.ServiceProvider
+                .GetRequiredService<TtmTransformationService>();
+
+        var primaryBalanceOverGdpTransformationService =
+            scope.ServiceProvider
+                .GetRequiredService<PrimaryBalanceOverGdpTransformationService>();
+
+        var forecastError12MonthsTransformationService =
+            scope.ServiceProvider
+                .GetRequiredService<ForecastError12MonthsTransformationService>();
+
+        var yoyTransformationService =
+            scope.ServiceProvider
+                .GetRequiredService<YoyTransformationService>();
+
         await treasuryImportService.ImportFiscalAsync(
             "10.07.1",
-            "01/2015",
-            null,
-            CancellationToken.None);
-
-        await CentralBankImportService.ImportDataAsync(
-            "4382",
-            "01/01/2015",
+            "01/2010",
             "",
             CancellationToken.None);
+
+        await treasuryImportService.ImportFiscalAsync(
+            "10.09.1",
+            "01/2010",
+            "",
+            CancellationToken.None);
+
+        await CentralBankImportService.ImportFiscalAsync(
+            "4382",
+            "01/01/2010",
+            "",
+            CancellationToken.None);
+
+        await ttmTransformationService.SeedTtmAsync(CancellationToken.None);
+        await primaryBalanceOverGdpTransformationService.SeedPrimaryBalanceOverGdpAsync(CancellationToken.None);
+        await forecastError12MonthsTransformationService.SeedForecastError12MonthsASync(CancellationToken.None);
+        await yoyTransformationService.SeedYoyAsync(CancellationToken.None);
     }
 }
 

@@ -13,6 +13,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
         private readonly BrazilEconomicMonitorDbContext _db;
 
+        private readonly ILogger<SeedDataCatalogService> _logger;
+
         private const string Source =
         "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766";
 
@@ -28,10 +30,11 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
         public SeedDataCatalogService(
             TreasuryApiClient client,
-            BrazilEconomicMonitorDbContext db)
+            BrazilEconomicMonitorDbContext db, ILogger<SeedDataCatalogService> logger)
         {
             _client = client;
             _db = db;
+            _logger = logger;
         }
 
         public async Task<int> SeedSourcesAsync(string Name, string SourceDocLink, 
@@ -45,7 +48,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             _db.Sources.Add(source);
             await _db.SaveChangesAsync(cancellationToken);
 
-            Console.WriteLine("Imported {Name} Source successfully.", Name);
+            _logger.LogInformation("Successfully seeded {Name} Source entity", Name);
 
             return source.Id;
         }
@@ -58,28 +61,12 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 SourceId = SourceId,
                 IsRaw = true
             };
+
             _db.Series.Add(series);
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            Console.WriteLine("Imported {Name} Series successfully.", Name);
-            
+            _logger.LogInformation("Successfully seeded {Name} Series entity", Name);
         }
-        /* public async Task ImportDerivedSeriesManually (string Name, string Code, CancellationToken cancellationToken = default)
-        {
-            var series = new Series
-            {
-                Name = Name,
-                Code = Code,
-                Source = "Calculated",
-                IsRaw = false
-            };
-            _db.Series.Add(series);
-
-            await _db.SaveChangesAsync(cancellationToken);
-
-            Console.WriteLine("Imported {Name} Series successfully.", Name);
-        } */
-
     }
 }
