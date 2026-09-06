@@ -27,10 +27,29 @@ namespace BrazilEconomicMonitor.Controllers
                     code,
                     cancellationToken);
 
-                if (response == null)
-                {
+            if (response == null)
+            {
                 return NotFound();
-                }
+            }
+            return Ok(response);
+        }
+
+        [HttpGet("series/{code}/{count}")]
+        public async Task<ActionResult<List<ObservationResponseDto>>> GetLatestGroupOfObservation(
+        string code,
+        int count,
+        CancellationToken cancellationToken)
+        {
+            List<ObservationResponseDto> response =
+            await _dashboardQueryService.GetLatestObservationAsync(
+                    code,
+                    count,
+                    cancellationToken);
+
+            if (response == null)
+            {
+                return NotFound();
+            }
             return Ok(response);
         }
     }

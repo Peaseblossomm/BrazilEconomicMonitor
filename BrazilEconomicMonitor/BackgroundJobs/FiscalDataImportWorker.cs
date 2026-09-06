@@ -19,7 +19,7 @@ namespace BrazilEconomicMonitor.BackgroundJobs
         CancellationToken stoppingToken)
         {
             using PeriodicTimer timer =
-                new PeriodicTimer(TimeSpan.FromMinutes(1));
+                new PeriodicTimer(TimeSpan.FromMinutes(5));
 
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {

@@ -63,47 +63,57 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var service =
+    var db =
+        scope.ServiceProvider
+            .GetRequiredService<BrazilEconomicMonitorDbContext>();
+
+    bool hasSources =
+        await db.Sources.AnyAsync();
+
+    if (!hasSources)
+    {
+        var service =
         scope.ServiceProvider
             .GetRequiredService<SeedDataCatalogService>();
 
-    int treasurySourceId = await service.SeedSourcesAsync(
-        Name: "Treasury",
-        SourceDocLink: "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766",
-        cancellationToken: CancellationToken.None);
+        int treasurySourceId = await service.SeedSourcesAsync(
+            Name: "Treasury",
+            SourceDocLink: "https://sisweb.tesouro.gov.br/apex/f?p=10250:7:101490171757515::NO:7:P7_ID_PROJETO:1766",
+            cancellationToken: CancellationToken.None);
 
-    int centralBankSourceId = await service.SeedSourcesAsync(
-        Name: "Central Bank",
-        SourceDocLink: "https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries",
-        cancellationToken: CancellationToken.None);
+        int centralBankSourceId = await service.SeedSourcesAsync(
+            Name: "Central Bank",
+            SourceDocLink: "https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries",
+            cancellationToken: CancellationToken.None);
 
-    int centralBankOlindaSourceId = await service.SeedSourcesAsync(
-        Name: "Central Bank Olinda",
-        SourceDocLink: "https://olinda.bcb.gov.br/olinda/service/Expectativas/version/v1/swagger-ui3",
-        cancellationToken: CancellationToken.None);
+        int centralBankOlindaSourceId = await service.SeedSourcesAsync(
+            Name: "Central Bank Olinda",
+            SourceDocLink: "https://olinda.bcb.gov.br/olinda/service/Expectativas/version/v1/swagger-ui3",
+            cancellationToken: CancellationToken.None);
 
-    int DerivedValueId = await service.SeedSourcesAsync(
-        Name: "Derived Value",
-        SourceDocLink: "",
-        cancellationToken: CancellationToken.None);
+        int DerivedValueId = await service.SeedSourcesAsync(
+            Name: "Derived Value",
+            SourceDocLink: "",
+            cancellationToken: CancellationToken.None);
 
-    await service.SeedSeriesAsync(
-        Name: "Primary Balance",
-        Code: "10.07.1",
-        SourceId: treasurySourceId,
-        cancellationToken: CancellationToken.None);
+        await service.SeedSeriesAsync(
+            Name: "Primary Balance",
+            Code: "10.07.1",
+            SourceId: treasurySourceId,
+            cancellationToken: CancellationToken.None);
 
-    await service.SeedSeriesAsync(
-        Name: "Nominal Balance",
-        Code: "10.09.1",
-        SourceId: treasurySourceId,
-        cancellationToken: CancellationToken.None);
+        await service.SeedSeriesAsync(
+            Name: "Nominal Balance",
+            Code: "10.09.1",
+            SourceId: treasurySourceId,
+            cancellationToken: CancellationToken.None);
 
-    await service.SeedSeriesAsync(
-        Name: "Nominal GDP",
-        Code: "4382",
-        SourceId: centralBankSourceId,
-        cancellationToken: CancellationToken.None);
+        await service.SeedSeriesAsync(
+            Name: "Nominal GDP",
+            Code: "4382",
+            SourceId: centralBankSourceId,
+            cancellationToken: CancellationToken.None);
+    }
 } 
 
 // Populate db with historical data if empty (first start) or with new additions latter
