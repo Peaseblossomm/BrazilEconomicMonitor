@@ -16,10 +16,10 @@
                 CancellationToken cancellationToken = default)
         {
             var url =
-                $"bcdata.sgs.{seriesCode}/dados"+
-                $"?formato=json" +
-                $"&dataInicial={startDate}" +
-                $"&dataFinal={endDate}";
+                $"bcdata.sgs.{seriesCode}/dados" +
+                    $"?formato=json" +
+                    $"&dataInicial={startDate}" +
+                    $"&dataFinal={endDate}";
 
             return await _httpClient.GetStringAsync(
                 url,

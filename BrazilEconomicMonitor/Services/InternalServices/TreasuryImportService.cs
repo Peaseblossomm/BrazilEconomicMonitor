@@ -114,10 +114,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                     _db.Observations.Add(observation);
                 }
-
-                await _db.SaveChangesAsync(cancellationToken);
-
             }
+            await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }

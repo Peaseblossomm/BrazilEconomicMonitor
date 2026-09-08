@@ -25,6 +25,12 @@ builder.Services.AddHttpClient<CentralBankApiClient>(client =>
     new Uri("https://api.bcb.gov.br/dados/serie/");
 });
 
+builder.Services.AddHttpClient<CbOlindaApiClient>(client =>
+{
+    client.BaseAddress =
+    new Uri("https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/");
+});
+
 builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
 
 // Add services to the container.   
@@ -39,6 +45,8 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<TreasuryImportService>();
 
 builder.Services.AddScoped<CentralBankImportService>();
+
+builder.Services.AddScoped<CbOlindaImportService>();
 
 builder.Services.AddScoped<SeedDataCatalogService>();
 
@@ -112,6 +120,24 @@ using (var scope = app.Services.CreateScope())
             Name: "Nominal GDP",
             Code: "4382",
             SourceId: centralBankSourceId,
+            cancellationToken: CancellationToken.None);
+
+        await service.SeedSeriesAsync(
+            Name: "Nominal GDP",
+            Code: "432",
+            SourceId: centralBankSourceId,
+            cancellationToken: CancellationToken.None);
+
+        await service.SeedSeriesAsync(
+            Name: "Nominal GDP",
+            Code: "13522",
+            SourceId: centralBankSourceId,
+            cancellationToken: CancellationToken.None);
+
+        await service.SeedSeriesAsync(
+            Name: "Inflation Expectation 12 months",
+            Code: "ExpectativasMercadoInflacao12Meses",
+            SourceId: centralBankOlindaSourceId,
             cancellationToken: CancellationToken.None);
     }
 } 

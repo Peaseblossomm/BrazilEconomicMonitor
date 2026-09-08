@@ -1,6 +1,8 @@
 ﻿namespace BrazilEconomicMonitor.DTOs
 {
-    public class CbOlindaDtoResponse
+    public class CbOlindaRatesResponseDto
     {
+        public List<CbOlindaRatesRecordDto> value { get; set; }
+        = new();
     }
 }

@@ -20,7 +20,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
 
         [Fact]
-        public async Task ImportFiscalAsync_ParsedCorrectly()
+        public async Task ImportFiscalAsync_ParsedCorrectly() // Checks if parsed correctly: not null, correct count, correct values.
         {
             string fakeJsonBody = """
                 
@@ -97,7 +97,8 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         }
 
         [Fact]
-        public async Task UpdateTreasuryDataAsyncTest_CorrectUriFormation()
+        public async Task UpdateTreasuryDataAsyncTest_CorrectUriFormation() // Should assign correct parameters to the Importer to get the latest
+                                                                            // LookbackMonths. Checks whether rows are updated.
         {
             string fakeJsonBody = """
                                     {"next":"https://apiapex.tesouro.gov.br/aria//v1/series-temporais/custom/resultado-fiscal?data_inicio=02/2026&data_fim=05/2026&tema=10&codigo_da_serie=10.08.1&page=2&pageSize=1000","pageSize":1000,"registros":
