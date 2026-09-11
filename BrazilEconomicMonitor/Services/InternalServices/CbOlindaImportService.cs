@@ -59,18 +59,20 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 throw new Exception("Source could not be found");
             }
 
+            HashSet<string> existingCodes =
+            await _db.Series
+            .Where(s => s.SourceId == source.Id)
+            .Select(s => s.Code)
+            .ToHashSetAsync(cancellationToken);
+
             foreach (CbOlindaRatesRecordDto record in response.value)
             {
-                Series? existing =
-                    await _db.Series.
-                    SingleOrDefaultAsync(
-                    o =>
-                    o.Name == record.Reuniao,
-                    cancellationToken);
+                string code =
+                "ExpectativasMercadoSelic_" + record.Reuniao;
 
-                if (existing != null)
+                if (existingCodes.Contains(code))
                 {
-                    break;
+                    continue;
                 }
 
                 Series seriesPerMeeting = new Series
@@ -78,46 +80,76 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     Name = "Selic Rate " + record.Reuniao,
                     Code = "ExpectativasMercadoSelic_" + record.Reuniao,
                     SourceId = source.Id
+
                 };
 
                 _db.Series.Add(seriesPerMeeting);
+
+                existingCodes.Add(code);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
 
+            Dictionary<string, int> existingSeriesByCode =
+            await _db.Series
+            .Where(s =>
+            s.SourceId == source.Id &&
+            s.Code.StartsWith("ExpectativasMercadoSelic_"))
+            .ToDictionaryAsync(
+            s => s.Code,
+            s => s.Id,
+            cancellationToken);
+
+            List<int> seriesIds =
+            existingSeriesByCode.Values.ToList();
+
+            List<Observation> existingObservations =
+            await _db.Observations
+            .Where(o => seriesIds.Contains(o.SeriesId))
+            .ToListAsync(cancellationToken);
+
+            Dictionary<(int SeriesId, DateTime Date), Observation> observationsByKey =
+            existingObservations.ToDictionary(
+                o => (o.SeriesId, o.ObservationDate));
+
             foreach (CbOlindaRatesRecordDto record in response.value)
             {
-                Series? seriesPerMeeting = await _db.Series.Where(
-                    o => o.Name == "Selic Rate " + record.Reuniao)
-                    .SingleOrDefaultAsync(cancellationToken);
+                string code = "ExpectativasMercadoSelic_" + record.Reuniao;
 
-                if (seriesPerMeeting == null)
+                if (!existingSeriesByCode.ContainsKey(code))
                 {
-                    throw new Exception("Series is not written in the db");
+                    throw new Exception("Expected Interest Rates series doesn't exist");
                 }
 
-                Observation? existing =
-                   await _db.Observations
-                       .SingleOrDefaultAsync(
-                           o =>
-                               o.Series.Name == "Selic Rate " + record.Reuniao &&
-                               o.ObservationDate == record.Data,
-                           cancellationToken);
+                int seriesId = existingSeriesByCode[code];
 
-                if (existing != null)
+                var key =
+                (SeriesId: seriesId, Date: record.Data);
+
+                if (observationsByKey.TryGetValue(
+                    key,
+                    out Observation? existing))
                 {
-                    existing.Value = record.Mediana;
+                    if (existing.Value != record.Mediana)
+                    {
+                        existing.Value = record.Mediana;
+                    }
+
+                    continue;
                 }
 
                 Observation observation = new Observation
                 {
-                    SeriesId = seriesPerMeeting.Id,
+                    SeriesId = seriesId,
                     ObservationDate = record.Data,
                     Value = record.Mediana
                 };
-                _db.Observations.Add(observation);
-            }
 
+                _db.Observations.Add(observation);
+
+                observationsByKey.Add(key, observation);
+            }
+            d
             await _db.SaveChangesAsync(cancellationToken);
         }
 

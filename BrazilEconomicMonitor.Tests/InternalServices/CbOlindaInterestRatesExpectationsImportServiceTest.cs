@@ -83,11 +83,10 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 Value = 11.25m,
 
                 ObservationDate = new DateTime(2026, 8, 27),
-
                 SeriesId = series.Id
             };
 
-            db.Observations.Add(outdatedObservation);
+            db.Observations.Add(outdatedObservation); //Problem ima tuka, duplo vpisuva, ne ja pronaoga postoeckava observacija
 
             await db.SaveChangesAsync();
 
