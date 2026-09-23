@@ -17,32 +17,16 @@ namespace BrazilEconomicMonitor.Controllers
             _dashboardQueryService = dashboardQueryService;
         }
 
-        [HttpGet("series/{code}/latest")]
-        public async Task<ActionResult<ObservationResponseDto>> GetLatestObservation(
-            string code,
-            CancellationToken cancellationToken)
-        {
-            ObservationResponseDto? response =
-            await _dashboardQueryService.GetLatestObservationAsync(
-                    code,
-                    cancellationToken);
-
-            if (response == null)
-            {
-                return NotFound();
-            }
-            return Ok(response);
-        }
-
-        [HttpGet("series/{code}/{count}")]
+        [HttpGet("series/{seriesCode}/{count}")]
         public async Task<ActionResult<List<ObservationResponseDto>>> GetLatestGroupOfObservation(
-        string code,
+        string seriesCode,
         int count,
         CancellationToken cancellationToken)
+
         {
             List<ObservationResponseDto> response =
-            await _dashboardQueryService.GetLatestObservationAsync(
-                    code,
+            await _dashboardQueryService.GetLatestObservationsByCountAsync(
+                    seriesCode,
                     count,
                     cancellationToken);
 

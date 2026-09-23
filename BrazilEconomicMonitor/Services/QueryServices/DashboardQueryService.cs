@@ -14,7 +14,7 @@ namespace BrazilEconomicMonitor.Services.QueryServices
             _db = db;
         }
 
-        public async Task<ObservationResponseDto?> GetLatestObservationAsync(
+        public async Task<ObservationResponseDto?> GetObservationsByDateAsync(
             string seriesCode,
             CancellationToken cancellationToken)
         {
@@ -28,11 +28,18 @@ namespace BrazilEconomicMonitor.Services.QueryServices
                  .FirstOrDefaultAsync(cancellationToken);
         }
 
-        public async Task<List<ObservationResponseDto>>GetLatestObservationAsync(
+        public async Task<List<ObservationResponseDto>>GetLatestObservationsByCountAsync(
             string seriesCode,
             int count,
             CancellationToken cancellation)
         {
+            var seriesExist = await _db.Series.Where(o => o.Code == seriesCode).SingleOrDefaultAsync();
+
+            if (seriesExist == null)
+            {
+                return new List<ObservationResponseDto>();
+            }
+
             List<ObservationResponseDto> observations =
                 await _db.Observations
                 .Where(o => o.Series.Code == seriesCode)

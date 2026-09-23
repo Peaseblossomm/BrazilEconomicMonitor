@@ -31,27 +31,57 @@ function App() {
             const gdp: Observation[] =
                 await gdpResponse.json();
 
-            const primaryBalanceResponse = await fetch(
-                "https://localhost:7206/api/dashboard/series/10.07.1_TTM/1"
+            const primaryBalanceOverGdpResponse = await fetch(
+                "https://localhost:7206/api/dashboard/series/10.07.1_PrimaryBalanceOverGdp/1"
             );
 
             const primaryBalance: Observation[] =
-                await primaryBalanceResponse.json();
+                await primaryBalanceOverGdpResponse.json();
+
+            const inflationCurrentResponse = await fetch(
+                "https://localhost:7206/api/dashboard/series/13522/1"
+            );
+
+            const inflation: Observation[] =
+                await inflationCurrentResponse.json();
+
+            const selicRateCurrentResponse = await fetch(
+                "https://localhost:7206/api/dashboard/series/432/1"
+            );
+
+            const selicRate: Observation[] =
+                await selicRateCurrentResponse.json();
+
 
             const loadedMetrics: Metric[] = [
                 {
                     name: "Nominal GDP",
                     value: gdp[0].value,
-                    date: gdp[0].date,
+                    date: new Date(gdp[0].date).toLocaleDateString("en-GB"),
                     unit: "BRL"
                 },
 
                 {
-                    name: "Primary Balance / GDP",
+                    name: "Primary Balance over GDP",
                     value: primaryBalance[0].value,
-                    date: primaryBalance[0].date,
+                    date: new Date(primaryBalance[0].date).toLocaleDateString("en-GB"),
+                    unit: "BRL"
+                },
+
+                {
+                    name: "Inflation Current",
+                    value: inflation[0].value,
+                    date: new Date(inflation[0].date).toLocaleDateString("en-GB"),
+                    unit: "%"
+                },
+
+                {
+                    name: "Selic Rate",
+                    value: selicRate[0].value,
+                    date: new Date(selicRate[0].date).toLocaleDateString("en-GB"),
                     unit: "%"
                 }
+
             ];
 
             setMetrics(loadedMetrics);

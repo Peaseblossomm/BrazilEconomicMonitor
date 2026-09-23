@@ -1,12 +1,19 @@
-﻿namespace BrazilEconomicMonitor.Infrastructure
+﻿using System.Net.Http.Headers;
+
+
+namespace BrazilEconomicMonitor.Infrastructure
 {
     public class CentralBankApiClient
     {
         private readonly HttpClient _httpClient;
 
-        public CentralBankApiClient(HttpClient httpClient)
+        private readonly ILogger<CentralBankApiClient> _logger;
+
+        public CentralBankApiClient(HttpClient httpClient, ILogger<CentralBankApiClient> logger)
         {
             _httpClient = httpClient;
+
+            _logger = logger;
         }
 
         public async Task<string> GetFiscalResultsAsync(
@@ -21,9 +28,38 @@
                     $"&dataInicial={startDate}" +
                     $"&dataFinal={endDate}";
 
-            return await _httpClient.GetStringAsync(
-                url,
-                cancellationToken);
+            HttpRequestMessage request =
+            new HttpRequestMessage(
+            HttpMethod.Get,
+            url);
+
+            request.Headers.UserAgent.ParseAdd("Mozilla/5.0");
+
+            request.Headers.Accept.Add(
+                new MediaTypeWithQualityHeaderValue(
+                    "application/json"));
+
+            request.Headers.Referrer =
+                new Uri("https://www3.bcb.gov.br/");
+
+            HttpResponseMessage httpResponse =
+                await _httpClient.SendAsync(
+                    request,
+                    cancellationToken);
+
+            string json =
+                await httpResponse.Content.ReadAsStringAsync(
+                    cancellationToken);
+
+            _logger.LogInformation("{status code}", httpResponse.StatusCode);
+
+            _logger.LogInformation("{headers content}", httpResponse.Content.Headers.ContentType);
+
+            _logger.LogInformation("{json response}", json);
+
+            _logger.LogInformation("Request URL: {Url}", url);
+
+            return json;
         }
     }
 }

@@ -149,7 +149,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                 observationsByKey.Add(key, observation);
             }
-            d
+            
             await _db.SaveChangesAsync(cancellationToken);
         }
 

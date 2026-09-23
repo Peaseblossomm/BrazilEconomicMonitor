@@ -61,6 +61,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             if (derivedSeries == null)
             {
                 Sources? source = await _db.Sources.FirstOrDefaultAsync(s => s.Name == "Derived Value", cancellationToken);
+
                 if (source == null)
                 {
                     throw new InvalidOperationException("Derived value source not found");

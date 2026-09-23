@@ -83,6 +83,12 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                 foreach (CentralBankRecordDto dto in response)
                 {
+
+                if (dto.Data.Day != 1)
+                { 
+                    continue;
+                }
+
                     DateTime observationDate =
                         new DateTime(
                             dto.Data.Year,
@@ -102,14 +108,15 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                         };
 
                         _db.Observations.Add(observation);
+                        await _db.SaveChangesAsync(cancellationToken);
                     }
 
                     else if (dto.Valor != existingObservation.Value)
                     {
                         existingObservation.Value = dto.Valor;
+                        await _db.SaveChangesAsync(cancellationToken);
                     }
                 }
-                await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }

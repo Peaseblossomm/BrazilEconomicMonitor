@@ -7,6 +7,7 @@ using BrazilEconomicMonitor.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<BrazilEconomicMonitorDbContext>(
@@ -41,6 +42,17 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+{
+    policy
+    .WithOrigins("http://localhost:62491")
+    .AllowAnyHeader()
+    .AllowAnyMethod();
+});
+    });
+
 
 builder.Services.AddScoped<TreasuryImportService>();
 
@@ -68,6 +80,8 @@ builder.Services.AddHostedService<FiscalDataImportWorker>();
 
 
 var app = builder.Build();
+
+app.UseCors("Frontend");
 
 using (var scope = app.Services.CreateScope())
 {
@@ -123,13 +137,13 @@ using (var scope = app.Services.CreateScope())
             cancellationToken: CancellationToken.None);
 
         await service.SeedSeriesAsync(
-            Name: "Nominal GDP",
+            Name: "Current Selic Rate",
             Code: "432",
             SourceId: centralBankSourceId,
             cancellationToken: CancellationToken.None);
 
         await service.SeedSeriesAsync(
-            Name: "Nominal GDP",
+            Name: "Current Inflation Rate",
             Code: "13522",
             SourceId: centralBankSourceId,
             cancellationToken: CancellationToken.None);
@@ -151,6 +165,20 @@ using (var scope = app.Services.CreateScope())
  
     bool hasObservations =
         await db.Observations.AnyAsync();
+
+    var CentralBankImportService1 =
+            scope.ServiceProvider
+                .GetRequiredService<CentralBankImportService>();
+
+    Console.WriteLine("Started ImportFiscalAsync");
+
+    await CentralBankImportService1.ImportFiscalAsync(
+            "432",
+            "01/01/2024",
+            "",
+            CancellationToken.None);
+
+    Console.WriteLine("Finished ImportFiscalAsync");
 
     if (!hasObservations)
     {
