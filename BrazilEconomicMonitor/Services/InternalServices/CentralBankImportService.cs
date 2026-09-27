@@ -28,11 +28,11 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             _logger = logger;
         }
 
-        public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken) // provides arguments for the ImportDataAsync method.
-                                                                                          // Looks back x months from the latest observation for each serie of theCentral Bank Api
-                                                                                          // The method is intended to be used for automatic feeding from the Api.
+        public async Task UpdateCentralBankDataAsync(CancellationToken cancellationToken) // Forms the query parameters for the scheduled calling of ImportFiscalAsync by the background worker orchestrator based on the latest ObservationDate.
+                                                                                          // Fetches x LookbackMonths from the latest observation date found in the db for each serie
+
         {
-            List<Series> centralBankSeries = await _db.Series.Where(s => s.Sources.Name == "Central Bank").ToListAsync(cancellationToken);
+            List<Series> centralBankSeries = await _db.Series.Where(s => s.Sources.Name == "Central Bank").ToListAsync(cancellationToken);  // All series fetched from CentralBank
 
             foreach (Series serie in centralBankSeries)
             {
@@ -54,7 +54,15 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             }
         }
 
-        public async Task ImportFiscalAsync(
+
+
+
+
+
+
+
+
+        public async Task ImportFiscalAsync(         // Calls the ApiClient method 
             string seriesCode,
             string startDate,
             string endDate,
@@ -84,12 +92,12 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 foreach (CentralBankRecordDto dto in response)
                 {
 
-                if (dto.Data.Day != 1)
-                { 
+                if (seriesCode == "432" && dto.Data.Day != 1)   // Central Bank Code 432 logic branch - Selic rate expectations are published on daily basis. 
+                {                                               // We'll normalize this data to the first of each month and skip pserting the rest.
                     continue;
                 }
 
-                    DateTime observationDate =
+                    DateTime observationDate =   // Normalizing the Date to the first of each month.
                         new DateTime(
                             dto.Data.Year,
                             dto.Data.Month,
@@ -98,9 +106,9 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                     Observation? existingObservation = await _db.Observations.SingleOrDefaultAsync( o => o.ObservationDate == observationDate && o.SeriesId == series.Id );
 
-                    if (existingObservation == null)
-                    {
-                        Observation? observation = new Observation
+                    if (existingObservation == null)   //Insert
+                {
+                        Observation? observation = new Observation  
                         {
                             SeriesId = series.Id,
                             ObservationDate = observationDate,
@@ -111,7 +119,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                         await _db.SaveChangesAsync(cancellationToken);
                     }
 
-                    else if (dto.Valor != existingObservation.Value)
+                    else if (dto.Valor != existingObservation.Value)   //Update 
                     {
                         existingObservation.Value = dto.Valor;
                         await _db.SaveChangesAsync(cancellationToken);

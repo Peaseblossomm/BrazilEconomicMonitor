@@ -12,6 +12,7 @@ using BrazilEconomicMonitor.Settings;
 using BrazilEconomicMonitor.Services.InternalServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.AspNetCore.WebUtilities;
 
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
@@ -23,8 +24,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         public async Task ImportDataAsync_ParsedAndStoredToDb()   //using the httpClient, gets the json string, parses it and feeds it into the db
         {
             string fakeApiResponseBody = """  
-                 [{ "data":"05/01/2025","valor":"11843110.3"},{ "data":"01/02/2025","valor":"11935727.9"},
-                
+               [{ "data":"05/01/2025","valor":"11843110.3"},{ "data":"01/02/2025","valor":"11935727.9"},       
                 { "data":"01/03/2025","valor":"12039140.8"},{ "data":"01/04/2025","valor":"12134427.2"},{ "data":"01/05/2025","valor":"12230341.5"},
                 { "data":"01/06/2025","valor":"12304727.1"},{ "data":"01/07/2025","valor":"12380925.6"},{ "data":"01/08/2025","valor":"12443552.8"},
                 { "data":"01/09/2025","valor":"12524498.7"},{ "data":"01/10/2025","valor":"12589491.8"},{ "data":"01/11/2025","valor":"12654854.6"},
@@ -39,7 +39,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 BaseAddress = new Uri("https://fake-centralbank.test")
             };
 
-            var client = new CentralBankApiClient(httpClient);
+            ILogger<CentralBankApiClient> loggerApiClient = NullLogger<CentralBankApiClient>.Instance;
+
+            var client = new CentralBankApiClient(httpClient, loggerApiClient);
 
             var connection = new SqliteConnection("Filename = :memory:");
             await connection.OpenAsync();
@@ -74,9 +76,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             {
                 LookbackMonths = 6
             });
-            ILogger<CentralBankImportService> logger = NullLogger<CentralBankImportService>.Instance;
+            ILogger<CentralBankImportService> loggerImportService = NullLogger<CentralBankImportService>.Instance;
 
-            var service = new CentralBankImportService(client, db, options, logger);
+            var service = new CentralBankImportService(client, db, options, loggerImportService);
 
             await service.ImportFiscalAsync(
             "4382",
@@ -86,6 +88,11 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             List<Observation> observations =
             await db.Observations.OrderBy(o =>o.ObservationDate).ToListAsync();
+
+            foreach (Observation observation in observations)
+            {
+                Console.WriteLine(observation.ObservationDate);
+            }
 
             Assert.NotEmpty(db.Observations);
             Assert.Equal(18, observations.Count);
@@ -111,7 +118,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 BaseAddress = new Uri("https://fake-centralbank.test")
             };
 
-            var client = new CentralBankApiClient(httpClient);
+            ILogger<CentralBankApiClient> loggerApiClient = NullLogger<CentralBankApiClient>.Instance;
+
+            var client = new CentralBankApiClient(httpClient, loggerApiClient);
 
             var connection = new SqliteConnection("Filename = :memory:");
             await connection.OpenAsync();
@@ -174,16 +183,16 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             Assert.NotNull(handler.LastRequest);
 
-            Assert.Contains(
-                "dataInicial=01/01/2026",
-                handler.LastRequest.RequestUri!.ToString()); // Client inserts the expected parameters inside the request URL
+            Uri responseUri = handler.LastRequest.RequestUri!;
+
+            var query = QueryHelpers.ParseQuery(responseUri.Query);
+
+            Assert.Equal(
+                "01/01/2026",
+                query["dataInicial"]); // Client inserts the expected parameters inside the request URL
 
             Assert.Contains(
                 "bcdata.sgs.4382/dados",
-                handler.LastRequest.RequestUri!.ToString());
-
-            Assert.Contains(
-                "https://fake-centralbank.test/",
                 handler.LastRequest.RequestUri!.ToString());
 
             Observation observationToBeUpdated = await db.Observations.SingleAsync(o => o.ObservationDate == new DateTime(2026, 1, 1));

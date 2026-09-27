@@ -28,8 +28,9 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             _logger = logger;
         }
 
-        public async Task UpdateTreasuryDataAsync(CancellationToken cancellationToken)
-        {
+        public async Task UpdateTreasuryDataAsync(CancellationToken cancellationToken)      // Forms the query parameters for the scheduled calling of ImportFiscalAsync by the background worker orchestrator based on the latest ObservationDate.
+        {                                                                                   // Fetches x LookbackMonths from the latest observation date found in the db for each serie
+                                                                                            
             List<Series> series = await _db.Series.Where(s => s.Sources.Name == "Treasury").ToListAsync(cancellationToken);
 
             foreach (Series serie in series)

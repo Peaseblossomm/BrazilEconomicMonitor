@@ -1,5 +1,8 @@
 ﻿using BrazilEconomicMonitor.Infrastructure;
 using BrazilEconomicMonitor.Tests.ExternalDependencies;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,7 +25,9 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
                 BaseAddress = new Uri("https://fake-centralbank.test")
             };
 
-            var client = new CentralBankApiClient(httpClient);
+            ILogger<CentralBankApiClient> logger = NullLogger<CentralBankApiClient>.Instance;
+
+            var client = new CentralBankApiClient(httpClient, logger);
 
             string result = await client.GetFiscalResultsAsync(
                 seriesCode: "4382",
@@ -32,17 +37,26 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
             Assert.Equal(fakeJson, result); //handler provides the expected json
             Assert.NotNull(handler.LastRequest);
 
-            Assert.Contains(
-                "dataInicial=01/01/2026",
-                handler.LastRequest.RequestUri!.ToString()); // Client inserts the expected parameters inside the request URL
+            Uri requestUri = handler.LastRequest.RequestUri!;
 
-            Assert.Contains(
-                "dataFinal=01/07/2026",
-                handler.LastRequest.RequestUri!.ToString());
+            var query = QueryHelpers.ParseQuery(requestUri.Query);
+
+            Assert.Equal(
+                "01/01/2026",
+                query["dataInicial"]); // Client inserts the expected parameters inside the request URL
+
+            Assert.Equal(
+                "01/07/2026",
+                query["dataFinal"]);
+
+            Assert.Equal(
+                "json",
+                query["formato"]);
 
             Assert.Contains(
                 "bcdata.sgs.4382/dados",
                 handler.LastRequest.RequestUri!.ToString());
+
             Assert.Contains(
                 "https://fake-centralbank.test/",
                 handler.LastRequest.RequestUri!.ToString());

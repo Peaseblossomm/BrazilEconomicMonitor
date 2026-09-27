@@ -3,6 +3,7 @@ using BrazilEconomicMonitor.Tests.ExternalDependencies;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace BrazilEconomicMonitor.Tests.ApiClients
 {
@@ -27,6 +28,7 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
 
             var client = new TreasuryApiClient(httpClient);
 
+
             // Act
             string result = await client.GetFiscalResultAsync(
                 seriesCode: "10.07.1",
@@ -38,25 +40,17 @@ namespace BrazilEconomicMonitor.Tests.ApiClients
 
             Assert.NotNull(handler.LastRequest);
 
-            Assert.Contains(
-                "codigo_da_serie=10.07.1",
-                handler.LastRequest.RequestUri!.ToString()); // Client inserts the expected parameters inside the request URL
+            Uri requestUri = handler.LastRequest.RequestUri!;
 
-            Assert.Contains(
-                "data_inicio=01/2025",
-                handler.LastRequest.RequestUri!.ToString());
+            var query = QueryHelpers.ParseQuery(requestUri.Query);
 
-            Assert.Contains(
-                "data_fim=12/2025",
-                handler.LastRequest.RequestUri!.ToString());
+            Assert.Equal("01/2025", query["data_inicio"]);
 
-            Assert.Contains(
-                "tema=10",
-                handler.LastRequest.RequestUri!.ToString());
+            Assert.Equal("10.07.1", query["codigo_da_serie"]);
 
-            Assert.Contains(
-                "https://fake-treasury.test/v1/series-temporais/custom/resultado-fiscal?data_inicio=01/2025&data_fim=12/2025&tema=10&codigo_da_serie=10.07.1",
-                handler.LastRequest.RequestUri!.ToString());
+            Assert.Equal("12/2025", query["data_fim"]);
+
+            Assert.Equal("10", query["tema"]);
         }
     }
 }

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
 {
@@ -97,8 +98,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         }
 
         [Fact]
-        public async Task UpdateTreasuryDataAsyncTest_CorrectUriFormation() // Should assign correct parameters to the Importer to get the latest
-                                                                            // LookbackMonths. Checks whether rows are updated.
+        public async Task UpdateTreasuryDataAsyncTest_CorrectUriFormation() // 1. Should assign correct parameters to the Importer to get the latest
+                                                                            // LookbackMonths.
+                                                                            // 2. Checks whether existing Observations are updated ( new Value)
         {
             string fakeJsonBody = """
                                     {"next":"https://apiapex.tesouro.gov.br/aria//v1/series-temporais/custom/resultado-fiscal?data_inicio=02/2026&data_fim=05/2026&tema=10&codigo_da_serie=10.08.1&page=2&pageSize=1000","pageSize":1000,"registros":
@@ -181,8 +183,12 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
 
             Assert.NotNull(handler.LastRequest);
 
-            Assert.Contains("?data_inicio=02/2026", handler.LastRequest.RequestUri!.ToString());
-            Assert.Contains("&codigo_da_serie=666", handler.LastRequest.RequestUri!.ToString());
+            Uri requestUri = handler.LastRequest.RequestUri!;
+
+            var query = QueryHelpers.ParseQuery(requestUri.Query);
+
+            Assert.Equal("02/2026", query["data_inicio"]);
+            Assert.Equal("666", query["codigo_da_serie"]);
 
             var observationToBeUpdated = await db.Observations.SingleAsync(o => o.ObservationDate == new DateTime(2026, 2, 1));
 

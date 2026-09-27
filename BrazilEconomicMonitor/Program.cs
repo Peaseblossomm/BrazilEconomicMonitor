@@ -159,6 +159,9 @@ using (var scope = app.Services.CreateScope())
 // Populate db with historical data if empty (first start) or with new additions latter
 using (var scope = app.Services.CreateScope())
 {
+
+
+    //TEST **************************
     var db =
         scope.ServiceProvider
             .GetRequiredService<BrazilEconomicMonitorDbContext>();
@@ -174,11 +177,14 @@ using (var scope = app.Services.CreateScope())
 
     await CentralBankImportService1.ImportFiscalAsync(
             "432",
-            "01/01/2024",
+            "01/01/2025",
             "",
             CancellationToken.None);
 
     Console.WriteLine("Finished ImportFiscalAsync");
+
+    // TEST ******************************
+
 
     if (!hasObservations)
     {
