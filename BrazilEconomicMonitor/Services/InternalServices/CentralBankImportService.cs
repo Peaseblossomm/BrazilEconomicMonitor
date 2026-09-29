@@ -59,9 +59,6 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
 
 
-
-
-
         public async Task ImportFiscalAsync(         // Calls the ApiClient method 
             string seriesCode,
             string startDate,

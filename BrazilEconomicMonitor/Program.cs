@@ -160,14 +160,14 @@ using (var scope = app.Services.CreateScope())
 using (var scope = app.Services.CreateScope())
 {
 
-
-    //TEST **************************
     var db =
         scope.ServiceProvider
             .GetRequiredService<BrazilEconomicMonitorDbContext>();
- 
+
     bool hasObservations =
         await db.Observations.AnyAsync();
+
+    /* TEST **************************
 
     var CentralBankImportService1 =
             scope.ServiceProvider
@@ -183,7 +183,7 @@ using (var scope = app.Services.CreateScope())
 
     Console.WriteLine("Finished ImportFiscalAsync");
 
-    // TEST ******************************
+     TEST ****************************** */
 
 
     if (!hasObservations)

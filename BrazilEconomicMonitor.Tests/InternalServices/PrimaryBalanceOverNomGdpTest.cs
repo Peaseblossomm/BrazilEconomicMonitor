@@ -52,6 +52,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             await _connection.DisposeAsync();
         }
 
+
         [Fact]
         public async Task PrimaryBalanceOverGdp_CorrectValue_Upserted()
         {

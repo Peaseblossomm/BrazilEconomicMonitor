@@ -13,12 +13,54 @@ using BrazilEconomicMonitor.Services.InternalServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Runtime.CompilerServices;
+using System.Data.Common;
 
 
 namespace BrazilEconomicMonitor.Tests.InternalServices
 {
     public class CentralBankImportServiceTests
     {
+
+        private async Task<(CentralBankImportService Service, BrazilEconomicMonitorDbContext Db, SqliteConnection Connection, FakeHttpMessageHandler Handler)>
+            CreateCentralBankImportServiceAsync(string fakeApiResponseBody)
+        {
+            var handler = new FakeHttpMessageHandler(fakeApiResponseBody);
+
+            var httpClient = new HttpClient(handler)
+            {
+                BaseAddress = new Uri("https://fake-centralbank.test")
+            };
+
+            ILogger<CentralBankApiClient> loggerApiClient = NullLogger<CentralBankApiClient>.Instance;
+
+            var client = new CentralBankApiClient(httpClient, loggerApiClient);
+
+            var connection = new SqliteConnection("Filename = :memory:");
+
+            await connection.OpenAsync();
+
+            var dbOptions = new DbContextOptionsBuilder<BrazilEconomicMonitorDbContext>()
+                .UseSqlite(connection)
+                .Options;
+
+            var db = new BrazilEconomicMonitorDbContext(dbOptions);
+
+            await db.Database.EnsureCreatedAsync();
+
+            IOptions<ImportSettings> options = Options.Create(new ImportSettings
+            {
+                LookbackMonths = 6
+            });
+            ILogger<CentralBankImportService> loggerImportService = NullLogger<CentralBankImportService>.Instance;
+
+            var service = new CentralBankImportService(client, db, options, loggerImportService);
+
+            return (service,
+                    db,
+                    connection,
+                    handler);
+        }
 
         [Fact]
         public async Task ImportDataAsync_ParsedAndStoredToDb()   //using the httpClient, gets the json string, parses it and feeds it into the db
@@ -33,25 +75,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 { "data":"01/06/2026","valor":"13192888.1"}]
              """;
 
-            var handler = new FakeHttpMessageHandler(fakeApiResponseBody);
-            var httpClient = new HttpClient(handler)
-            {
-                BaseAddress = new Uri("https://fake-centralbank.test")
-            };
+            string seriesCode = "4382";
 
-            ILogger<CentralBankApiClient> loggerApiClient = NullLogger<CentralBankApiClient>.Instance;
-
-            var client = new CentralBankApiClient(httpClient, loggerApiClient);
-
-            var connection = new SqliteConnection("Filename = :memory:");
-            await connection.OpenAsync();
-
-            var dbOptions = new DbContextOptionsBuilder<BrazilEconomicMonitorDbContext>()
-                .UseSqlite(connection)
-                .Options;
-
-            var db = new BrazilEconomicMonitorDbContext(dbOptions);
-            await db.Database.EnsureCreatedAsync();
+            var (service, db, connection, handler) = await CreateCentralBankImportServiceAsync(fakeApiResponseBody);
 
             var source = new Sources
             {
@@ -65,23 +91,15 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             var series = new Series
             {
                 Name = "Nominal GDP",
-                Code = "4382",
+                Code = seriesCode,
                 SourceId = source.Id,
             };
 
             db.Series.Add(series);
             await db.SaveChangesAsync();
 
-            IOptions<ImportSettings> options = Options.Create(new ImportSettings
-            {
-                LookbackMonths = 6
-            });
-            ILogger<CentralBankImportService> loggerImportService = NullLogger<CentralBankImportService>.Instance;
-
-            var service = new CentralBankImportService(client, db, options, loggerImportService);
-
             await service.ImportFiscalAsync(
-            "4382",
+            seriesCode,
             "01/2025",
             "",
             CancellationToken.None);
@@ -89,11 +107,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             List<Observation> observations =
             await db.Observations.OrderBy(o =>o.ObservationDate).ToListAsync();
 
-            foreach (Observation observation in observations)
-            {
-                Console.WriteLine(observation.ObservationDate);
-            }
-
+     
             Assert.NotEmpty(db.Observations);
             Assert.Equal(18, observations.Count);
             Assert.Equal(observations[0].SeriesId, series.Id); //parses correctly
@@ -101,6 +115,57 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             Assert.Equal(new DateTime(2025, 1, 1), observations[0].ObservationDate); // any day of the month should be normalized to the 1st of the MM
             Assert.Equal(11843110.3m, observations[0].Value);  // value exists and is of decimal type
         }
+
+        [Fact]
+        public async Task ImportDataAsync_432Branch_ParsedAndStoredToDb()
+        {
+            string fakeApiResponseBody =     """
+                                            [{ "data":"01/07/2026","valor":"14.25"},{ "data":"05/07/2026","valor":"14.25"},{ "data":"08/07/2026","valor":"14.25"},
+                                             { "data":"01/08/2026","valor":"14.25"},{ "data":"05/08/2026","valor":"14.25"},
+                                             { "data":"01/09/2026","valor":"14.00"},{ "data":"07/09/2026","valor":"14.00"},{ "data":"08/09/2026","valor":"14.00"},{ "data":"09/09/2026","valor":"14.00"}]
+                                         """;
+            string seriesCode = "4382";
+
+            var (service, db, connection, handler) = await CreateCentralBankImportServiceAsync(fakeApiResponseBody);
+
+            var source = new Sources
+            {
+                Name = "Central Bank",
+                DocLink = "https://link"
+            };
+
+            db.Sources.Add(source);
+            await db.SaveChangesAsync();
+
+            var series = new Series
+            {
+                Name = "Nominal GDP",
+                Code = seriesCode,
+                SourceId = source.Id,
+            };
+
+            db.Series.Add(series);
+            await db.SaveChangesAsync();
+
+            await service.ImportFiscalAsync(
+            seriesCode,
+            "01/2025",
+            "",
+            CancellationToken.None);
+
+            List<Observation> observations =
+            await db.Observations.OrderBy(o => o.ObservationDate).ToListAsync();
+
+            Assert.NotEmpty(db.Observations);
+            Assert.Equal(3, observations.Count);  // only values from the 1st day of each month should be upserted **** this is the main difference of the branch
+            Assert.Equal(observations[0].SeriesId, series.Id); //parses correctly
+
+            Assert.Equal(new DateTime(2026, 7, 1), observations[0].ObservationDate);  // any day of the month should be normalized to the 1st of the MM
+            Assert.Equal(14.25m, observations[0].Value);  // value exists and is of decimal type
+
+        }
+
+
         [Fact]
         public async Task UpdateCentralBankDataAsync_()   // Tests that the method assigns the correct Uri for the ImportDataAsync method and that older values are updated
         {
@@ -111,26 +176,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                          { "data":"01/07/2026","valor":"12304727.1"}]
                         """;
 
-            var handler = new FakeHttpMessageHandler(fakeApiResponseBody);
+            string seriesCode = "4382";
 
-            var httpClient = new HttpClient(handler)
-            {
-                BaseAddress = new Uri("https://fake-centralbank.test")
-            };
-
-            ILogger<CentralBankApiClient> loggerApiClient = NullLogger<CentralBankApiClient>.Instance;
-
-            var client = new CentralBankApiClient(httpClient, loggerApiClient);
-
-            var connection = new SqliteConnection("Filename = :memory:");
-            await connection.OpenAsync();
-
-            var dbOptions = new DbContextOptionsBuilder<BrazilEconomicMonitorDbContext>()
-                .UseSqlite(connection)
-                .Options;
-
-            var db = new BrazilEconomicMonitorDbContext(dbOptions);
-            await db.Database.EnsureCreatedAsync();
+            var (service, db, connection, handler) = await CreateCentralBankImportServiceAsync(fakeApiResponseBody);
 
             var source = new Sources
             {
@@ -168,28 +216,21 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
             db.Observations.AddRange(sixMonthsEarlierObservation, latestObservation);
             await db.SaveChangesAsync();
 
-            IOptions<ImportSettings> options = Options.Create(new ImportSettings
-            {
-                LookbackMonths = 6
-            });
-
-            ILogger<CentralBankImportService> logger = NullLogger<CentralBankImportService>.Instance;
-
-            var service = new CentralBankImportService(client, db, options, logger);
-
             await service.UpdateCentralBankDataAsync(CancellationToken.None);
+
+            Assert.NotNull(handler.LastRequest);
 
             Console.WriteLine(handler.LastRequest.RequestUri);
 
-            Assert.NotNull(handler.LastRequest);
 
             Uri responseUri = handler.LastRequest.RequestUri!;
 
             var query = QueryHelpers.ParseQuery(responseUri.Query);
 
+
             Assert.Equal(
                 "01/01/2026",
-                query["dataInicial"]); // Client inserts the expected parameters inside the request URL
+                query["dataInicial"]); // Client forms the expected query parameters inside the request URL
 
             Assert.Contains(
                 "bcdata.sgs.4382/dados",
