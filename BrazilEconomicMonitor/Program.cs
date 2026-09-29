@@ -167,26 +167,24 @@ using (var scope = app.Services.CreateScope())
     bool hasObservations =
         await db.Observations.AnyAsync();
 
-    /* TEST **************************
+    // TEST **************************
 
-    var CentralBankImportService1 =
+    var PrimaryOverGdpTransformation =
             scope.ServiceProvider
-                .GetRequiredService<CentralBankImportService>();
+            .GetRequiredService<PrimaryBalanceOverGdpTransformationService>();
 
-    Console.WriteLine("Started ImportFiscalAsync");
+    Console.WriteLine("Started TransformationService");
 
-    await CentralBankImportService1.ImportFiscalAsync(
-            "432",
-            "01/01/2025",
-            "",
+    await PrimaryOverGdpTransformation.CalculatePrimaryBalanceOverGdpAsync(
+            new DateTime (2026,1,1),
             CancellationToken.None);
 
     Console.WriteLine("Finished ImportFiscalAsync");
 
-     TEST ****************************** */
+      // TEST ---------------------- / 
 
 
-    if (!hasObservations)
+    // if (!hasObservations)
     {
         var treasuryImportService =
             scope.ServiceProvider

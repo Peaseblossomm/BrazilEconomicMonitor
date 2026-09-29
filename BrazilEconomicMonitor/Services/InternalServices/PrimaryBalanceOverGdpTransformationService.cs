@@ -34,10 +34,10 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
             Series primaryBalanceOverGdp = await _helperServices.FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
 
-            Observation? latestPrimaryBalanceObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Name == "Primary Balance")
+            Observation? latestPrimaryBalanceObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Code == "10.07.1_TTM")
                 .OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
 
-            Observation? latestNominalGdpObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Name == "Nominal GDP")
+            Observation? latestNominalGdpObservation = await _db.Observations.Include(o => o.Series).Where(o => o.Series.Code == "4382")
                 .OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
 
             if (latestPrimaryBalanceObservation == null)
@@ -78,9 +78,13 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     continue;
                 }
 
-                decimal primBalanceGdpRatio = primBalance.Value * 100m / nomGdp.Value;
+                decimal primBalanceGdpRatio = primBalance.Value * 100 / nomGdp.Value;
 
-                await _helperServices.UpsertDerivedObservationAsync(primaryBalanceOverGdp.Id, date, primBalanceGdpRatio, cancellationToken);
+                decimal roundedPrimBalanceGdpRatio = Math.Round(primBalanceGdpRatio, 2);
+
+                Console.WriteLine("primary balance Log: {primBalanceGdpRatio}");
+
+                await _helperServices.UpsertDerivedObservationAsync(primaryBalanceOverGdp.Id, date, roundedPrimBalanceGdpRatio, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
