@@ -30,7 +30,7 @@ public class TtmTransformationService
 
     {
         _db = db;
-        _logger = logger;
+        _logger = logger; 
         _helperServices = helperServices;
         _LookbackMonths = options.Value.LookbackMonths;
     }

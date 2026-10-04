@@ -2,6 +2,7 @@
 using BrazilEconomicMonitor.DTOs;
 using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.CompilerServices;
 
 namespace BrazilEconomicMonitor.Services.QueryServices
 {
@@ -31,9 +32,9 @@ namespace BrazilEconomicMonitor.Services.QueryServices
         public async Task<List<ObservationResponseDto>>GetLatestObservationsByCountAsync(
             string seriesCode,
             int count,
-            CancellationToken cancellation)
+            CancellationToken cancellationToken)
         {
-            var seriesExist = await _db.Series.Where(o => o.Code == seriesCode).SingleOrDefaultAsync();
+            var seriesExist = await _db.Series.Where(o => o.Code == seriesCode).SingleOrDefaultAsync(cancellationToken);
 
             if (seriesExist == null)
             {

@@ -40,6 +40,10 @@ namespace BrazilEconomicMonitor.BackgroundJobs
                         scope.ServiceProvider
                             .GetRequiredService<CentralBankImportService>();
 
+                    var cbOlindaImportService =
+                        scope.ServiceProvider
+                            .GetRequiredService<CbOlindaImportService>();
+
                     var ttmTransformationService =
                         scope.ServiceProvider
                             .GetRequiredService<TtmTransformationService>();
@@ -62,6 +66,17 @@ namespace BrazilEconomicMonitor.BackgroundJobs
 
                     await centralBankImportService.UpdateCentralBankDataAsync(
                         stoppingToken);
+
+                    int interestRatesObsCount = 12;
+
+                    await cbOlindaImportService.ImportIntrestRatesExpectationsAsync(interestRatesObsCount, stoppingToken);
+
+                    int inflationObsCount = 12;
+
+                    await cbOlindaImportService.ImportInflationExpectationsAsync(inflationObsCount, stoppingToken);
+
+
+
 
                     await ttmTransformationService.UpdateTtmAsync(
                         stoppingToken);

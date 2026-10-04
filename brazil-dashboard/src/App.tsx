@@ -3,6 +3,17 @@ import MetricCard from "./MetricCard";
 import { useEffect, useState } from "react";
 import "./App.css";
 
+
+import {
+    ResponsiveContainer,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip
+} from "recharts";
+
 interface Observation {
     date: string;
     value: number;
@@ -14,10 +25,17 @@ interface Metric {
     unit?: string;
 }
 
+
 function App() {
 
     const [metrics, setMetrics] =
         useState<Metric[]>([]);
+
+    const [graphData, setGraphData] =
+        useState<Observation[]>([]);
+
+        console.log(graphData);
+        
 
     useEffect(() => {
         async function loadMetrics() {
@@ -89,6 +107,27 @@ function App() {
     },
         []);
 
+    useEffect(() => { 
+
+        async function loadGraphData() {
+
+            const response = await fetch(
+            "https://localhost:7206/api/dashboard/series/4382/12"
+
+            );
+
+            const data: Observation[] = await response.json();
+
+            setGraphData(data);
+        }
+
+        loadGraphData();
+
+        }, []);
+
+
+
+
     return (
         <div className="app">
 
@@ -105,6 +144,25 @@ function App() {
                         unit={metric.unit}
                     />
                 ))}
+            </div>
+
+            <div style={{ width: "600px", height: "300px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={graphData}>
+                <CartesianGrid strokeDasharray="3 3" />
+
+                <XAxis dataKey="date" />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Line
+                    type="monotone"
+                    dataKey="value"
+                />
+                </LineChart>
+            </ResponsiveContainer>
             </div>
         </div>
     );

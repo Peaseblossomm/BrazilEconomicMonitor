@@ -25,15 +25,11 @@ namespace BrazilEconomicMonitor.Controllers
 
         {
             List<ObservationResponseDto> response =
-            await _dashboardQueryService.GetLatestObservationsByCountAsync(
+            await _dashboardQueryService.GetLatestObservationsByCountAsync( // if series don't exist yet, it will return an empty list
                     seriesCode,
                     count,
                     cancellationToken);
 
-            if (response == null)
-            {
-                return NotFound();
-            }
             return Ok(response);
         }
     }

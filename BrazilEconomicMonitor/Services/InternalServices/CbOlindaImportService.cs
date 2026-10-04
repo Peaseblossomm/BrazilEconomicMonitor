@@ -55,6 +55,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                    .Where(o => o.Name == "Central Bank Olinda").SingleOrDefaultAsync();
 
             if (source == null)
+
             {
                 throw new Exception("Source could not be found");
             }

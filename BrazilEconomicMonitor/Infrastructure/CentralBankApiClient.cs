@@ -38,7 +38,7 @@ namespace BrazilEconomicMonitor.Infrastructure
             /* var url =
                 $"bcdata.sgs.{seriesCode}/dados" +
                     $"?formato=json" +
-                    $"&dataInicial={startDate}" +
+                    $"&dataInicial={startDate}" +   
                     $"&dataFinal={endDate}"; */
 
             string json =
