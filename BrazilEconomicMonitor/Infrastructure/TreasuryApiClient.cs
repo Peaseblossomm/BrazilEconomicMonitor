@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.WebUtilities;
+using BrazilEconomicMonitor.CustomExceptions;
 
 namespace BrazilEconomicMonitor.Infrastructure
 
@@ -36,16 +37,44 @@ namespace BrazilEconomicMonitor.Infrastructure
                 TreasuryResultEndpoint, queryParameters);
 
 
-           /* var url =
-            $"v1/series-temporais/custom/resultado-fiscal" +
-            $"?data_inicio={startDate}" +
-            $"&data_fim={endDate}" +
-            $"&tema=10" +
-            $"&codigo_da_serie={seriesCode}"; */
+            /* var url =
+             $"v1/series-temporais/custom/resultado-fiscal" +
+             $"?data_inicio={startDate}" +
+             $"&data_fim={endDate}" +
+             $"&tema=10" +
+             $"&codigo_da_serie={seriesCode}"; */
 
-            return await _httpClient.GetStringAsync(
-            url,
-            cancellationToken); 
+            string json;
+
+            string source = "Treasury";
+
+            try
+            {
+                var response = await _httpClient.GetAsync(
+                url,
+                cancellationToken);
+
+                json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new SeriesImportException(
+                        seriesCode,
+                        source,
+                        response.StatusCode,
+                        response.ReasonPhrase);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new SeriesImportException(
+                    seriesCode,
+                    source,
+                    ex
+                    );
+            }
+
+            return json;
         }
 
         public async Task<string> GetSeriesCatalogAsync(

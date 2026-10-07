@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 using System.Globalization;
+using BrazilEconomicMonitor.CustomExceptions;
 
 namespace BrazilEconomicMonitor.Services.InternalServices
 {
@@ -57,16 +58,31 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         }
 
         public async Task ImportFiscalAsync(
-        string code,
+        string seriesCode,
         string startDate,
         string? endDate,
             CancellationToken cancellationToken)
         {
-            string json = await _client.GetFiscalResultAsync(
-            code,
-            startDate,
-            endDate,
-            cancellationToken);
+            string json;
+
+            string source = "Treasury";
+
+            try 
+            {
+                json = await _client.GetFiscalResultAsync(
+                seriesCode,
+                startDate,
+                endDate,
+                cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new SeriesImportException(
+                    seriesCode,
+                    source,
+                    ex);
+            }
+
 
             TreasuryResponseDto? response =
                 JsonSerializer.Deserialize<TreasuryResponseDto>(
@@ -80,12 +96,12 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 return;
 
             Series? series = await _db.Series
-                .SingleOrDefaultAsync(s => s.Code == code &&
+                .SingleOrDefaultAsync(s => s.Code == seriesCode &&
                 s.Sources.Name == "Treasury", cancellationToken);
 
             if (series == null)
             {
-                throw new Exception($"Series {code} not found.");
+                throw new Exception($"Series {seriesCode} not found.");
             }
 
             foreach (TreasuryRecordDto record in response.Registros)

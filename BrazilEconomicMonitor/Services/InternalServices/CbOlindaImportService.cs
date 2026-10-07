@@ -7,6 +7,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 using BrazilEconomicMonitor.Services;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
+using BrazilEconomicMonitor.CustomExceptions;
 
 namespace BrazilEconomicMonitor.Services.InternalServices
 {
@@ -30,14 +31,18 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             _LookbackMonths = options.Value.LookbackMonths;
 
         }
-
+            
         public async Task ImportIntrestRatesExpectationsAsync(
             int count,
             CancellationToken cancellationToken)
         {
-            string json = await _client.GetInterestRatesExpectationsAsync(
-            count,
-            cancellationToken);
+
+            count = _LookbackMonths;
+
+               string json = await _client.GetInterestRatesExpectationsAsync(
+                count,
+                cancellationToken);
+
 
             CbOlindaRatesResponseDto? response =
                 JsonSerializer.Deserialize<CbOlindaRatesResponseDto>(
@@ -81,7 +86,6 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     Name = "Selic Rate " + record.Reuniao,
                     Code = "ExpectativasMercadoSelic_" + record.Reuniao,
                     SourceId = source.Id
-
                 };
 
                 _db.Series.Add(seriesPerMeeting);
@@ -158,9 +162,11 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             int count,
             CancellationToken cancellationToken)
         {
-            string json = await _client.GetInflationExpectationsAsync(
-            count,
-            cancellationToken);
+
+                string json = await _client.GetInflationExpectationsAsync(
+                count,
+                cancellationToken);
+
 
             CbOlindaInflationResponseDto? response =
                 JsonSerializer.Deserialize<CbOlindaInflationResponseDto>(

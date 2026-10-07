@@ -6,9 +6,26 @@ using BrazilEconomicMonitor.Services.QueryServices;
 using BrazilEconomicMonitor.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
+using OpenTelemetry.Resources;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services
+    .AddOpenTelemetry()
+    .ConfigureResource(resource =>
+                       resource.AddService("BrazilEconomicMonitor"))
+    .WithLogging(logging =>
+    {
+        logging.AddOtlpExporter(options =>
+        {
+            options.Endpoint =
+            new Uri(
+                "http://localhost:5341/ingest/otlp/v1/logs");
+        });
+    });
 
 builder.Services.AddDbContext<BrazilEconomicMonitorDbContext>(
 options =>
@@ -271,6 +288,10 @@ app.MapGet("/series", async (BrazilEconomicMonitorDbContext db) =>
 {
 return await db.Series.ToListAsync();
 }); */
+
+app.Logger.LogInformation(
+    "OpenTelemetry test from {Application}",
+    "BrazilEconomicMonitor");
 
 app.Run();
  

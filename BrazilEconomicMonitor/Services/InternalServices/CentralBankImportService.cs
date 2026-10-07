@@ -6,6 +6,8 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 using System.Globalization;
+using System.Linq.Expressions;
+using BrazilEconomicMonitor.CustomExceptions;
 
 namespace BrazilEconomicMonitor.Services.InternalServices
 {
@@ -43,8 +45,10 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                 string apiStartDate = startDate.ToString("01/MM/yyyy",CultureInfo.InvariantCulture);
 
+                string seriesCode = serie.Code;
+
                 await ImportFiscalAsync(
-                    serie.Code,
+                    seriesCode,
                     apiStartDate,
                     "",               // left out empty means up to the latest data
                     cancellationToken
@@ -65,11 +69,27 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             string endDate,
             CancellationToken cancellationToken)
         {
-            string json = await _client.GetFiscalResultsAsync(
+            string json;
+
+            string source = "Central Bank";
+
+            try
+            {
+                json = await _client.GetFiscalResultsAsync(
                 seriesCode,
                 startDate,
                 endDate);
-
+            }
+            catch(HttpRequestException ex)
+            {
+                throw new SeriesImportException
+                    (
+                    seriesCode,
+                    source,
+                    ex
+                    );
+            }
+            
             List<CentralBankRecordDto>? response =
                 JsonSerializer.Deserialize<List<CentralBankRecordDto>>(
                     json,

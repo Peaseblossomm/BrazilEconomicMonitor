@@ -1,5 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using Microsoft.AspNetCore.WebUtilities;
+using BrazilEconomicMonitor.CustomExceptions;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 
 
 namespace BrazilEconomicMonitor.Infrastructure
@@ -41,10 +43,45 @@ namespace BrazilEconomicMonitor.Infrastructure
                     $"&dataInicial={startDate}" +   
                     $"&dataFinal={endDate}"; */
 
-            string json =
-                await _httpClient.GetStringAsync(
+            string source = "Central Bank";
+
+            string json;
+
+            try
+            {
+                using var response =
+                    await _httpClient.GetAsync(
                     url,
                     cancellationToken);
+
+                json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+
+                    /* _logger.LogError(
+                        "Central Bank unsuccessful Http response" + "for Series:{SeriesCode}, Source: {source}, Status: {StatusCode}, Reason: {Reason}, Body: {Body}",
+                        seriesCode,
+                        source,
+                        response.StatusCode,
+                        response.ReasonPhrase,
+                        json);             "variant 1 - Logged locally, doesn't propagate upwards"   */
+
+                    throw new SeriesImportException(
+                        seriesCode,
+                        source,
+                        response.StatusCode,
+                        response.ReasonPhrase);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new SeriesImportException(
+                    seriesCode,
+                    source,
+                    ex
+                    );
+            }
 
             _logger.LogInformation("Request URL: {Url}", url);
 

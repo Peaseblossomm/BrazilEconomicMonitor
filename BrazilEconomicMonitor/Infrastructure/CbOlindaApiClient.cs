@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using BrazilEconomicMonitor.CustomExceptions;
+using System.Runtime.CompilerServices;
 
 namespace BrazilEconomicMonitor.Infrastructure
 
@@ -38,25 +40,89 @@ namespace BrazilEconomicMonitor.Infrastructure
             $"&$filter=Suavizada eq 'S' and baseCalculo eq 0 and Indicador eq 'IPCA Serviços'" +
             $"&$top={count}"; */
 
-            return await _httpClient.GetStringAsync(
+            string json;
+
+            string seriesCode = "ExpectativasMercadoInflacao12Meses";
+
+            string source = "Central Bank Olinda";
+
+            try
+            {
+                var response = await _httpClient.GetAsync(
                     url,
                     cancellationToken);
+
+                    json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new SeriesImportException(
+                        seriesCode,
+                        source,
+                        response.StatusCode,
+                        response.ReasonPhrase);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new SeriesImportException(
+                    seriesCode,
+                    source,
+                    ex);
+            }
+
+            return json;
         }
 
         public async Task<string> GetInterestRatesExpectationsAsync(
             int count,
             CancellationToken cancellationToken)
         {
-            var url =
-            $"ExpectativasMercadoSelic" +
-            $"?$format=json" +
-            $"&$orderby=Data desc" +
-            $"&$filter=baseCalculo eq 0" +
-            $"&$top={count}";
 
-            return await _httpClient.GetStringAsync(
+            string endpoint = "ExpectativasMercadoSelic";
+
+            var queryParameters = new Dictionary<string, string?>
+            {
+                ["format"] = "json",
+                ["orderby"] = "Data desc",
+                ["filter"] = "baseCalculo eq 0",
+                ["top"] = count.ToString()
+            };
+
+            var url = QueryHelpers.AddQueryString(endpoint, queryParameters);
+
+            string source = "Central Bank Olinda";
+
+            string seriesCode = "ExpectativasMercadoSelic";
+
+            string json;
+
+            try
+            {
+                var response = await _httpClient.GetAsync(
                     url,
                     cancellationToken);
+
+                json = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new SeriesImportException(
+                        seriesCode,
+                        source,
+                        response.StatusCode,
+                        response.ReasonPhrase);
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new SeriesImportException(
+                    seriesCode,
+                    source,
+                    ex);
+            }
+
+            return json;
 
         }
     }
