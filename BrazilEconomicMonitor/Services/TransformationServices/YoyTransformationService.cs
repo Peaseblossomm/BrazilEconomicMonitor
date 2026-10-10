@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 
-namespace BrazilEconomicMonitor.Services.InternalServices
+namespace BrazilEconomicMonitor.Services.TransformationServices
 {
     public class YoyTransformationService
     {
@@ -34,6 +34,9 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
         public async Task CalculateYoyAsync(DateTime startDate, CancellationToken cancellationToken)
         {
+
+            List<string> successfullyTransformedSeries = new List<string>();
+
             foreach (string code in _YoYSeriesCodes)
             {
                 Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
@@ -60,7 +63,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
                     if (previousYear.Value == 0)
                     {
-                        throw new DivideByZeroException($"Cannot calculate YoY for {current.ObservationDate:MM/yyyy}" +
+                        throw new DivideByZeroException($"Cannot calculate YoY for series {code} for {current.ObservationDate:MM/yyyy}" +
                         $"because the value for {previousYear.ObservationDate:MM/yyyy} is zero");
                     }
 
@@ -77,22 +80,23 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     decimal YoYValue = ((current.Value / previousYear.Value) - 1) * 100;
 
                     await _helperServices.UpsertDerivedObservationAsync(YoYSeries.Id, current.ObservationDate, YoYValue, cancellationToken);
+
+                    successfullyTransformedSeries.Add(code);
+
                 }
                 await _db.SaveChangesAsync(cancellationToken);
 
-                _logger.LogInformation("Saved YoY observations successfully! Series transformed: {series}", string.Join(",", _YoYSeriesCodes));
+                _logger.LogInformation("Saved YoY observations successfully! Series transformed: {series}", successfullyTransformedSeries);
             }
         }
 
         public async Task SeedYoyAsync(CancellationToken cancellationToken)
         {
-            DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
-
-            _logger.LogInformation("Seeded YoY observations since 1 jan 2010 successfully! Series transformed: {series}", string.Join(",", _YoYSeriesCodes));
+            DateTime startDate = new DateTime(2015, 1, 1).AddMonths(-12);
 
             await CalculateYoyAsync(startDate, cancellationToken);
 
-            _logger.LogInformation("Seeded YoY observations since 1 jan 2010 successfully!");
+            _logger.LogInformation("Seeded YoY observations since 1 jan 2015 successfully!");
 
         }
 
@@ -112,7 +116,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     .Select(o => o.ObservationDate)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                DateTime startDate = latestDate.AddMonths(-(_LookbackMonths + 12)); // calculate the ttm for the latest "Lookback" months, IOptions
+                DateTime startDate = latestDate.AddMonths(-(_LookbackMonths + 12));      // calculate the ttm for the latest "Lookback" months, IOptions
 
                 await CalculateYoyAsync(startDate, cancellationToken);
             }

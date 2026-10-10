@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
-namespace BrazilEconomicMonitor.Services.InternalServices;
+namespace BrazilEconomicMonitor.Services.TransformationServices;
 
 public class TtmTransformationService
 {

@@ -1,8 +1,11 @@
 using BrazilEconomicMonitor.BackgroundJobs;
 using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
+using BrazilEconomicMonitor.Orchestrators;
+using BrazilEconomicMonitor.Services;
 using BrazilEconomicMonitor.Services.InternalServices;
 using BrazilEconomicMonitor.Services.QueryServices;
+using BrazilEconomicMonitor.Services.TransformationServices;
 using BrazilEconomicMonitor.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -70,6 +73,7 @@ builder.Services.AddCors(options =>
 });
     });
 
+builder.Services.AddScoped<ImportCycleOrchestrator>();
 
 builder.Services.AddScoped<TreasuryImportService>();
 

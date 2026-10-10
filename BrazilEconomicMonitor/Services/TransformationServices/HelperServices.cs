@@ -2,7 +2,7 @@
 using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-namespace BrazilEconomicMonitor.Services.InternalServices
+namespace BrazilEconomicMonitor.Services.TransformationServices
 {
     public class HelperServices
     {
@@ -46,6 +46,8 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             else if (existing.Value != value)
             {
                 existing.Value = value;
+
+                _logger.LogInformation("Revision of observation {observation} from source Treasury API for date {date}", existing.Series.Name, existing.ObservationDate);
             }
         }
 

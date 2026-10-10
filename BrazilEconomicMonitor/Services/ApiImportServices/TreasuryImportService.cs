@@ -63,25 +63,13 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         string? endDate,
             CancellationToken cancellationToken)
         {
-            string json;
 
-            string source = "Treasury";
-
-            try 
-            {
-                json = await _client.GetFiscalResultAsync(
+               string json = await _client.GetFiscalResultAsync(
                 seriesCode,
                 startDate,
                 endDate,
                 cancellationToken);
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new SeriesImportException(
-                    seriesCode,
-                    source,
-                    ex);
-            }
+
 
 
             TreasuryResponseDto? response =
@@ -93,7 +81,9 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     });
 
             if (response == null)
-                return;
+            {
+                throw new InvalidOperationException($"Api response {seriesCode} is not found.");
+            }
 
             Series? series = await _db.Series
                 .SingleOrDefaultAsync(s => s.Code == seriesCode &&
@@ -101,7 +91,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
             if (series == null)
             {
-                throw new Exception($"Series {seriesCode} not found.");
+                throw new InvalidOperationException($"Series {seriesCode} not found.");
             }
 
             foreach (TreasuryRecordDto record in response.Registros)
@@ -116,23 +106,33 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                    await _db.Observations
                        .SingleOrDefaultAsync(
                            o =>
-                               o.SeriesId == series.Id &&
-                               o.ObservationDate == observationDate,
+                           o.SeriesId == series.Id &&
+                           o.ObservationDate == observationDate,
                            cancellationToken);
 
-                if (existing == null)
+                if (existing != null) //update branch
                 {
-                    Observation? observation = new Observation
+                    if (existing.Value != record.Valor)
                     {
-                        SeriesId = series.Id,
-                        ObservationDate = observationDate,
-                        Value = record.Valor
-                    };
+                        existing.Value = record.Valor;
 
-                    _db.Observations.Add(observation);
+                        _logger.LogInformation("Revision of observation {observation} from source Treasury API for date {date}", existing.Series.Name, existing.ObservationDate);
+                    }
+
+                    continue;
                 }
+
+                Observation? observation = new Observation   // insert branch
+                {
+                    SeriesId = series.Id,
+                    ObservationDate = observationDate,
+                    Value = record.Valor
+                };
+
+                _db.Observations.Add(observation);
+
             }
-            await _db.SaveChangesAsync(cancellationToken);
+                await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }

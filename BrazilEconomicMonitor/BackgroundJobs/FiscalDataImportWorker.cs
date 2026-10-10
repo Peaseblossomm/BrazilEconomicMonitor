@@ -1,4 +1,5 @@
 ﻿using BrazilEconomicMonitor.Services.InternalServices;
+using BrazilEconomicMonitor.Services.TransformationServices;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BrazilEconomicMonitor.BackgroundJobs

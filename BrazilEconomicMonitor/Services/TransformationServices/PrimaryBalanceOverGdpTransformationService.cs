@@ -4,7 +4,7 @@ using BrazilEconomicMonitor.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace BrazilEconomicMonitor.Services.InternalServices
+namespace BrazilEconomicMonitor.Services.TransformationServices
 {
     public class PrimaryBalanceOverGdpTransformationService
     {

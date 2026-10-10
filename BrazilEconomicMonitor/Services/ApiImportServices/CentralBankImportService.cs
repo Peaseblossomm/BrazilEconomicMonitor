@@ -80,7 +80,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 startDate,
                 endDate);
             }
-            catch(HttpRequestException ex)
+            catch (HttpRequestException ex)
             {
                 throw new SeriesImportException
                     (
@@ -97,51 +97,59 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     { PropertyNameCaseInsensitive = true });
 
             if (response == null)
-                return;
+            {
+                throw new InvalidOperationException($"Api response for series {seriesCode} from source {source} is not found.");
+            }
+                
 
 
             Series? series = await _db.Series.SingleOrDefaultAsync(s =>
             s.Code == seriesCode && s.Sources.Name == "Central Bank", cancellationToken);
 
             if (series == null)
-                throw new Exception("No series were found referencing Central Bank as the source and the given series code");
+                throw new Exception($"No series were found referencing {source} the source and the given series code");
 
                 foreach (CentralBankRecordDto dto in response)
                 {
 
-                if (seriesCode == "432" && dto.Data.Day != 1)   // Central Bank Code 432 logic branch - Selic rate expectations are published on daily basis. 
-                {                                               // We'll normalize this data to the first of each month and skip pserting the rest.
-                    continue;
-                }
-
-                    DateTime observationDate =   // Normalizing the Date to the first of each month.
-                        new DateTime(
-                            dto.Data.Year,
-                            dto.Data.Month,
-                            1
-                        );
-
-                    Observation? existingObservation = await _db.Observations.SingleOrDefaultAsync( o => o.ObservationDate == observationDate && o.SeriesId == series.Id );
-
-                    if (existingObservation == null)   //Insert
-                {
-                        Observation? observation = new Observation  
-                        {
-                            SeriesId = series.Id,
-                            ObservationDate = observationDate,
-                            Value = dto.Valor
-                        };
-
-                        _db.Observations.Add(observation);
-                        await _db.SaveChangesAsync(cancellationToken);
+                    if (seriesCode == "432" && dto.Data.Day != 1)   // Central Bank Code 432 logic branch - Selic rate expectations are published on daily basis. 
+                    {                                               // We'll normalize this data to the first of each month and skip pserting the rest.
+                        continue;
                     }
 
-                    else if (dto.Valor != existingObservation.Value)   //Update 
+                        DateTime observationDate =   // Normalizing the Date to the first of each month.
+                            new DateTime(
+                                dto.Data.Year,
+                                dto.Data.Month,
+                                1
+                            );
+
+                        Observation? existing = await _db.Observations.SingleOrDefaultAsync( o => o.ObservationDate == observationDate && o.SeriesId == series.Id );
+
+                    if (existing != null)   //Insert
                     {
-                        existingObservation.Value = dto.Valor;
-                        await _db.SaveChangesAsync(cancellationToken);
+                        if (existing.Value != dto.Valor)
+                        {
+                            existing.Value = dto.Valor;
+
+                            _logger.LogInformation("Revision of observation {observation} from source Treasury API for date {date}", existing.Series.Name, existing.ObservationDate);
+                        }
+
+                        continue;
                     }
+
+                    Observation? observation = new Observation
+                    {
+                        SeriesId = series.Id,
+                        ObservationDate = observationDate,
+                        Value = dto.Valor
+                    };
+
+                    _db.Observations.Add(observation);
+
                 }
+
+                await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }

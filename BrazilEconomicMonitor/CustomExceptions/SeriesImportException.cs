@@ -5,7 +5,7 @@ namespace BrazilEconomicMonitor.CustomExceptions
     public class SeriesImportException: Exception
     {
         public string SeriesCode { get; }
-        public string Source { get; }
+        public string DataSource { get; }
         public HttpStatusCode? StatusCode { get; }
         public string? ReasonPhrase { get; }
 

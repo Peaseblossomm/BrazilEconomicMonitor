@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
 
-namespace BrazilEconomicMonitor.Services.InternalServices
+namespace BrazilEconomicMonitor.Services.TransformationServices
 {
     public class ForecastError12MonthsTransformationService
     {

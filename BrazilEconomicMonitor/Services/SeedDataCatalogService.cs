@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Xml.Linq;
 
-namespace BrazilEconomicMonitor.Services.InternalServices
+namespace BrazilEconomicMonitor.Services
 {
     public class SeedDataCatalogService
     {
@@ -40,6 +40,15 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         public async Task<int> SeedSourcesAsync(string Name, string SourceDocLink, 
         CancellationToken cancellationToken = default)
         {
+            Sources? existing = await _db.Sources.SingleOrDefaultAsync(s => s.Name == Name);
+
+            if (existing != null)
+            {
+                _logger.LogInformation("Source {Name} allready exists in db", Name);
+
+                return existing.Id;
+            }
+
             var source = new Sources
             {
                 Name = Name,
@@ -54,6 +63,14 @@ namespace BrazilEconomicMonitor.Services.InternalServices
         }
         public async Task SeedSeriesAsync(string Name, string Code, int SourceId, CancellationToken cancellationToken = default)
         {
+            Series? existing = await _db.Series.SingleOrDefaultAsync(s => s.Name == Name && s.SourceId == SourceId);
+
+            if (existing != null)
+            {
+                _logger.LogInformation("Series {Name} allready exists in db", Name);
+
+                return;
+            }
             var series = new Series
             {
                 Name = Name,
