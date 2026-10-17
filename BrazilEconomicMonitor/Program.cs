@@ -52,6 +52,12 @@ builder.Services.AddHttpClient<CbOlindaApiClient>(client =>
     new Uri("https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/");
 });
 
+builder.Services.AddHttpClient<CopomApiClient>(client =>
+{
+    client.BaseAddress =
+    new Uri("https://www.bcb.gov.br/api/servico/sitebcb/copom/");
+});
+
 builder.Services.Configure<ImportSettings>(builder.Configuration.GetSection("ImportSettings"));
 
 // Add services to the container.   
@@ -134,6 +140,11 @@ using (var scope = app.Services.CreateScope())
             SourceDocLink: "https://olinda.bcb.gov.br/olinda/service/Expectativas/version/v1/swagger-ui3",
             cancellationToken: CancellationToken.None);
 
+        int copomSourceId = await service.SeedSourcesAsync(
+            Name: "Central Bank Copom",
+            SourceDocLink: "https://www.bcb.gov.br/conteudo/dadosabertos/BCBDeinf/elements_copom.html#/operations/listaComunicados",
+            cancellationToken: CancellationToken.None);
+
         int DerivedValueId = await service.SeedSourcesAsync(
             Name: "Derived Value",
             SourceDocLink: "",
@@ -173,6 +184,12 @@ using (var scope = app.Services.CreateScope())
             Name: "Inflation Expectation 12 months",
             Code: "ExpectativasMercadoInflacao12Meses",
             SourceId: centralBankOlindaSourceId,
+            cancellationToken: CancellationToken.None);
+
+        await service.SeedSeriesAsync(
+            Name: "Copom meetings annoucements",
+            Code: "CopomComunicados",
+            SourceId: copomSourceId,
             cancellationToken: CancellationToken.None);
     }
 } 

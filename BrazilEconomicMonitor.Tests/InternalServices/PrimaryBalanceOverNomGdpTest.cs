@@ -1,6 +1,6 @@
 ﻿using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
-using BrazilEconomicMonitor.Services.InternalServices;
+using BrazilEconomicMonitor.Services.TransformationServices;
 using BrazilEconomicMonitor.Settings;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +86,7 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 new Series
                 {
                     Name = "Primary Balance",
-                    Code = "10.07.1",
+                    Code = "10.07.1_TTM",
                     SourceId = sources[0].Id
 
                 },

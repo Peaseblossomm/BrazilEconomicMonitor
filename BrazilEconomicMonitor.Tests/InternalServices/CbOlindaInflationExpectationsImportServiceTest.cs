@@ -37,7 +37,9 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
                 BaseAddress = new Uri("https://fake-olinda.test")
             };
 
-            var client = new CbOlindaApiClient(httpClient);
+            ILogger<CbOlindaApiClient> apiLogger = NullLogger<CbOlindaApiClient>.Instance;
+
+            var client = new CbOlindaApiClient(httpClient, apiLogger);
 
             var connection = new SqliteConnection("filename=:memory:");
 

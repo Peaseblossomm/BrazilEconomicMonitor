@@ -117,14 +117,14 @@ namespace BrazilEconomicMonitor.Tests.InternalServices
         }
 
         [Fact]
-        public async Task ImportDataAsync_432Branch_ParsedAndStoredToDb()
+        public async Task ImportDataAsync_432Branch_ParsedAndStoredToDb()  // Check that the logic branch for series 432 is storing only one value per month (first day of the month)
         {
             string fakeApiResponseBody =     """
                                             [{ "data":"01/07/2026","valor":"14.25"},{ "data":"05/07/2026","valor":"14.25"},{ "data":"08/07/2026","valor":"14.25"},
                                              { "data":"01/08/2026","valor":"14.25"},{ "data":"05/08/2026","valor":"14.25"},
                                              { "data":"01/09/2026","valor":"14.00"},{ "data":"07/09/2026","valor":"14.00"},{ "data":"08/09/2026","valor":"14.00"},{ "data":"09/09/2026","valor":"14.00"}]
                                          """;
-            string seriesCode = "4382";
+            string seriesCode = "432";
 
             var (service, db, connection, handler) = await CreateCentralBankImportServiceAsync(fakeApiResponseBody);
 

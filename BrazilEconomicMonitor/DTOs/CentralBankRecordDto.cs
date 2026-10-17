@@ -12,6 +12,5 @@ namespace BrazilEconomicMonitor.DTOs
         public decimal Valor { get; set; }
         public string CodigoSerie { get; set; } = "";
 
-
     }
 }

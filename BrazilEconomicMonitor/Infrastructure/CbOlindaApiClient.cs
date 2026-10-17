@@ -86,7 +86,6 @@ namespace BrazilEconomicMonitor.Infrastructure
                 ["format"] = "json",
                 ["orderby"] = "Data desc",
                 ["filter"] = "baseCalculo eq 0",
-                ["top"] = count.ToString()
             };
 
             var url = QueryHelpers.AddQueryString(endpoint, queryParameters);

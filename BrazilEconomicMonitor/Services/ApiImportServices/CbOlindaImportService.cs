@@ -36,7 +36,7 @@ namespace BrazilEconomicMonitor.Services.InternalServices
             CancellationToken cancellationToken)
         {
 
-            count = _LookbackMonths;
+            count = 16;  //Daily ingest, next forward 16 Central Bank meetings R1-R8.
 
                string json = await _client.GetInterestRatesExpectationsAsync(
                 count,
@@ -144,6 +144,11 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                     throw new InvalidOperationException("Expected Interest Rates series doesn't exist");
                 }
 
+                if (record.Data.Day != 1)
+                {
+                    continue;
+                }
+
                 int seriesId = existingSeriesByCode[code];
 
                 var key =
@@ -187,19 +192,34 @@ namespace BrazilEconomicMonitor.Services.InternalServices
                 count,
                 cancellationToken);
 
+            CbOlindaInflationResponseDto? response;
 
-            CbOlindaInflationResponseDto? response =
-                JsonSerializer.Deserialize<CbOlindaInflationResponseDto>(
-                    json,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+            try
+            {
+                    response =
+                    JsonSerializer.Deserialize<CbOlindaInflationResponseDto>(
+                        json,
+                        new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+            }
+            catch (JsonException ex)
+            {
+                throw new SeriesImportException(
+                    "ExpectativasMercadoInflacao12Meses",
+                    "Central Bank Olinda",
+                    ex
+                    );
+            }
 
             if (response == null)
             {
                 throw new InvalidOperationException($"Api response ExpectativasMercadoInflacao12Meses is not found.");
             }
+
+            response.value.Reverse();  // Inflation expectations are listed in the api from earliest to latest. here that is reversed and in line with other series
+
 
             Series? series = await _db.Series
                .SingleOrDefaultAsync(s => s.Code == "ExpectativasMercadoInflacao12Meses" &&
@@ -208,11 +228,17 @@ namespace BrazilEconomicMonitor.Services.InternalServices
 
             if (series == null)
             {
-                throw new NullReferenceException($"Series for ExpectativasMercadoInflacao12Meses not found.");
+                throw new InvalidOperationException($"Series for ExpectativasMercadoInflacao12Meses not found.");
             }
 
             foreach (var record in response.value)
             {
+
+                if (record.Data.Day != 1)
+                {
+                    continue;
+                }
+
                 DateTime observationDate = record.Data;
 
                 Observation? existing =

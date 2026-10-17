@@ -15,12 +15,7 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
         private readonly HelperServices _helperServices;
 
         private readonly int _LookbackMonths;
-
-        private readonly HashSet<string> _ForecastError12Months =
-        [
-
-        ];
-
+        private readonly HashSet<(string forecastSeriesCode, string? actualSeriesCode)> _seriesToBeCompred;
         public ForecastError12MonthsTransformationService(BrazilEconomicMonitorDbContext db, ILogger<ForecastError12MonthsTransformationService> logger,
             HelperServices helperServices, IOptions<ImportSettings> options)
 
@@ -29,6 +24,22 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
             _logger = logger;
             _helperServices = helperServices;
             _LookbackMonths = options.Value.LookbackMonths;
+
+            _seriesToBeCompred = new HashSet<(string forecastSeriesCode, string? actualSeriesCode)>
+            {
+                ("13522", "ExpectativasMercadoInflacao12Meses"),
+                ("432", null)
+            };
+        }
+
+
+        public async Task<string> LatestSelicRateSeries(CancellationToken cancellationToken)
+        {
+            DateTime current = DateTime.Now;
+
+
+            
+            string latestSeriesCode = await _db.Series.Where()
         }
 
         public async Task CalculateForecastError12MonthsAsync(DateTime startDate, CancellationToken cancellationToken)
@@ -39,6 +50,7 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
 
                 if (inputSeries == null)
                     continue;
+
                 List<Observation> observations =
                     await _db.Observations
                     .Where(o => o.SeriesId == inputSeries.Id)
