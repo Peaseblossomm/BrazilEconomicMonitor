@@ -58,15 +58,6 @@ namespace BrazilEconomicMonitor.Infrastructure
 
                 if (!response.IsSuccessStatusCode)
                 {
-
-                    /* _logger.LogError(
-                        "Central Bank unsuccessful Http response" + "for Series:{SeriesCode}, Source: {source}, Status: {StatusCode}, Reason: {Reason}, Body: {Body}",
-                        seriesCode,
-                        source,
-                        response.StatusCode,
-                        response.ReasonPhrase,
-                        json);             "variant 1 - Logged locally, doesn't propagate upwards"   */
-
                     throw new SeriesImportException(
                         seriesCode,
                         source,
@@ -82,8 +73,6 @@ namespace BrazilEconomicMonitor.Infrastructure
                     ex
                     );
             }
-
-            _logger.LogInformation("Request URL: {Url}", url);
 
             return json;
         }

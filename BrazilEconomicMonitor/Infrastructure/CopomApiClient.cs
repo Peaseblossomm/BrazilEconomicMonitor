@@ -12,19 +12,19 @@ namespace BrazilEconomicMonitor.Infrastructure
 
         private readonly ILogger<CopomApiClient> _logger;
 
-        public CopomApiClient(HttpClient httpClient, ILogger logger)
+        public CopomApiClient(HttpClient httpClient, ILogger<CopomApiClient> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
         }
 
-        public async Task<string> GetLatestCopomMeetingAsync(CancellationToken cancellationToken)
+        public async Task<string> GetLatestCopomMeetingAsync(string count, CancellationToken cancellationToken)
         {
             string endpoint = "comunicados";
 
             var queryParameters = new Dictionary<string, string?>
             {
-                ["quantidade"] = "1"
+                ["quantidade"] = count
             };
 
             string url = QueryHelpers.AddQueryString(endpoint, queryParameters);

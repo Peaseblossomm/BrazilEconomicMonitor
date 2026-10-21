@@ -15,7 +15,7 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
         private readonly HelperServices _helperServices;
 
         private readonly int _LookbackMonths;
-        private readonly HashSet<(string forecastSeriesCode, string? actualSeriesCode)> _seriesToBeCompred;
+        private readonly HashSet<(string forecastSeriesCode, string? actualSeriesCode)> _seriesToBeCompared;
         public ForecastError12MonthsTransformationService(BrazilEconomicMonitorDbContext db, ILogger<ForecastError12MonthsTransformationService> logger,
             HelperServices helperServices, IOptions<ImportSettings> options)
 
@@ -25,7 +25,7 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
             _helperServices = helperServices;
             _LookbackMonths = options.Value.LookbackMonths;
 
-            _seriesToBeCompred = new HashSet<(string forecastSeriesCode, string? actualSeriesCode)>
+             _seriesToBeCompared = new HashSet<(string forecastSeriesCode, string? actualSeriesCode)>
             {
                 ("13522", "ExpectativasMercadoInflacao12Meses"),
                 ("432", null)
@@ -33,18 +33,17 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
         }
 
 
-        public async Task<string> LatestSelicRateSeries(CancellationToken cancellationToken)
+        public async Task<string> LatestSelicMeetingAsync(CancellationToken cancellationToken)
         {
             DateTime current = DateTime.Now;
 
+            Observation? latestMeeting = await _db.Observations.Where(o => o.Series.Code == "CopomComunicados").OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
 
-            
-            string latestSeriesCode = await _db.Series.Where()
         }
 
         public async Task CalculateForecastError12MonthsAsync(DateTime startDate, CancellationToken cancellationToken)
         {
-            foreach (string code in _ForecastError12Months)
+            foreach ((string,string?) code in _seriesToBeCompared)
             {
                 Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
 

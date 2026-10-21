@@ -3,6 +3,7 @@ using BrazilEconomicMonitor.Domain.Entities;
 using BrazilEconomicMonitor.Infrastructure;
 using BrazilEconomicMonitor.Orchestrators;
 using BrazilEconomicMonitor.Services;
+using BrazilEconomicMonitor.Services.ApiImportServices;
 using BrazilEconomicMonitor.Services.InternalServices;
 using BrazilEconomicMonitor.Services.QueryServices;
 using BrazilEconomicMonitor.Services.TransformationServices;
@@ -86,6 +87,8 @@ builder.Services.AddScoped<TreasuryImportService>();
 builder.Services.AddScoped<CentralBankImportService>();
 
 builder.Services.AddScoped<CbOlindaImportService>();
+
+builder.Services.AddScoped<CopomImportService>();
 
 builder.Services.AddScoped<SeedDataCatalogService>();
 

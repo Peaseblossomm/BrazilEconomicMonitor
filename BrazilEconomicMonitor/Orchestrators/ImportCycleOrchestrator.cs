@@ -1,4 +1,5 @@
 ﻿using BrazilEconomicMonitor.CustomExceptions;
+using BrazilEconomicMonitor.Services.ApiImportServices;
 using BrazilEconomicMonitor.Services.InternalServices;
 using BrazilEconomicMonitor.Services.TransformationServices;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -11,6 +12,7 @@ namespace BrazilEconomicMonitor.Orchestrators
         private readonly TreasuryImportService _treasuryImportService;
         private readonly CentralBankImportService _centralBankImportService;
         private readonly CbOlindaImportService _cbOlindaImportService;
+        private readonly CopomImportService _copomImportService;
         private readonly TtmTransformationService _ttmTransformationService;
         private readonly PrimaryBalanceOverGdpTransformationService _primaryBalanceOverGdpTransformationService;
         private readonly ForecastError12MonthsTransformationService _forecastError12MonthsTransformationService;
@@ -21,6 +23,7 @@ namespace BrazilEconomicMonitor.Orchestrators
             TreasuryImportService treasuryImportService,
             CentralBankImportService centralBankImportService,
             CbOlindaImportService cbOlindaImportService,
+            CopomImportService copomImportService,
             TtmTransformationService ttmTransformationService,
             PrimaryBalanceOverGdpTransformationService primaryBalanceOverGdpTransformationService,
             ForecastError12MonthsTransformationService forecastError12MonthsTransformationService,
@@ -30,6 +33,8 @@ namespace BrazilEconomicMonitor.Orchestrators
             _treasuryImportService = treasuryImportService;
             _centralBankImportService = centralBankImportService;
             _cbOlindaImportService = cbOlindaImportService;
+            _copomImportService = copomImportService;
+
             _ttmTransformationService = ttmTransformationService;
             _primaryBalanceOverGdpTransformationService =
                 primaryBalanceOverGdpTransformationService;
@@ -100,6 +105,13 @@ namespace BrazilEconomicMonitor.Orchestrators
             steps.Add(await ExecutemportStepAsync(
             "Central Bank import",
             () => _centralBankImportService.UpdateCentralBankDataAsync(
+            cancellationToken),
+            cancellationToken));
+
+            steps.Add(await ExecutemportStepAsync(
+            "Central Bank Copom meetings import", 
+            () => _copomImportService.ImportCopomLatestMeetingAsync(
+                "1",      // number of imported meetings - latest
             cancellationToken),
             cancellationToken));
 
