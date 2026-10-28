@@ -98,7 +98,7 @@ builder.Services.AddScoped<TtmTransformationService>();
 
 builder.Services.AddScoped<PrimaryBalanceOverGdpTransformationService>();
 
-builder.Services.AddScoped<ForecastError12MonthsTransformationService>();
+builder.Services.AddScoped<ForecastErrorInflation12MonthsTransformationService>();
 
 builder.Services.AddScoped<YoyTransformationService>();
 
@@ -245,7 +245,7 @@ using (var scope = app.Services.CreateScope())
 
         var forecastError12MonthsTransformationService =
             scope.ServiceProvider
-                .GetRequiredService<ForecastError12MonthsTransformationService>();
+                .GetRequiredService<ForecastErrorInflation12MonthsTransformationService>();
 
         var yoyTransformationService =
             scope.ServiceProvider
@@ -271,7 +271,7 @@ using (var scope = app.Services.CreateScope())
 
         await ttmTransformationService.SeedTtmAsync(CancellationToken.None);
         await primaryBalanceOverGdpTransformationService.SeedPrimaryBalanceOverGdpAsync(CancellationToken.None);
-        await forecastError12MonthsTransformationService.SeedForecastError12MonthsASync(CancellationToken.None);
+        await forecastError12MonthsTransformationService.SeedForecastError12MonthsAsync(CancellationToken.None);
         await yoyTransformationService.SeedYoyAsync(CancellationToken.None);
     }
 }

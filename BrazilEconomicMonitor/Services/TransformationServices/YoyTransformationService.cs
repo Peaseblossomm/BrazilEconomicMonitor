@@ -92,11 +92,11 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
 
         public async Task SeedYoyAsync(CancellationToken cancellationToken)
         {
-            DateTime startDate = new DateTime(2015, 1, 1).AddMonths(-12);
+            DateTime startDate = new DateTime(2018, 1, 1).AddMonths(-12);
 
             await CalculateYoyAsync(startDate, cancellationToken);
 
-            _logger.LogInformation("Seeded YoY observations since 1 jan 2015 successfully!");
+            _logger.LogInformation("Seeded YoY observations since 1 jan 2018 successfully!");
 
         }
 

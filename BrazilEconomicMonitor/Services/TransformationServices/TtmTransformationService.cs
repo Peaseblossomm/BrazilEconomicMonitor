@@ -89,13 +89,13 @@ public class TtmTransformationService
 
     public async Task SeedTtmAsync(CancellationToken cancellationToken)
     {
-        DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
+        DateTime startDate = new DateTime(2018, 1, 1).AddMonths(-12);
 
         _logger.LogInformation("Started seeding the database with Ttm transformations. Series transformed: {series}", string.Join(",",_ttmSeriesCodes));
 
         await CalculateTtmAsync(startDate, cancellationToken);
 
-        _logger.LogInformation("Seeded ttm observations since 1 jan 2010 Successfully");
+        _logger.LogInformation("Seeded ttm observations since 1 jan 2018 Successfully");
     }
 
     public async Task UpdateTtmAsync(CancellationToken cancellationToken)

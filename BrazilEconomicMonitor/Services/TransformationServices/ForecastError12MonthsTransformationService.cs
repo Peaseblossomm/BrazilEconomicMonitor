@@ -3,20 +3,20 @@ using BrazilEconomicMonitor.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using BrazilEconomicMonitor.Settings;
+using System.Diagnostics.Eventing.Reader;
 
 namespace BrazilEconomicMonitor.Services.TransformationServices
 {
-    public class ForecastError12MonthsTransformationService
+    public class ForecastErrorInflation12MonthsTransformationService
     {
         private readonly BrazilEconomicMonitorDbContext _db;
 
-        private readonly ILogger<ForecastError12MonthsTransformationService> _logger;
+        private readonly ILogger<ForecastErrorInflation12MonthsTransformationService> _logger;
 
         private readonly HelperServices _helperServices;
 
         private readonly int _LookbackMonths;
-        private readonly HashSet<(string forecastSeriesCode, string? actualSeriesCode)> _seriesToBeCompared;
-        public ForecastError12MonthsTransformationService(BrazilEconomicMonitorDbContext db, ILogger<ForecastError12MonthsTransformationService> logger,
+        public ForecastErrorInflation12MonthsTransformationService(BrazilEconomicMonitorDbContext db, ILogger<ForecastErrorInflation12MonthsTransformationService> logger,
             HelperServices helperServices, IOptions<ImportSettings> options)
 
         {
@@ -25,99 +25,118 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
             _helperServices = helperServices;
             _LookbackMonths = options.Value.LookbackMonths;
 
-             _seriesToBeCompared = new HashSet<(string forecastSeriesCode, string? actualSeriesCode)>
-            {
-                ("13522", "ExpectativasMercadoInflacao12Meses"),
-                ("432", null)
-            };
         }
-
-
-        public async Task<string> LatestSelicMeetingAsync(CancellationToken cancellationToken)
+        public async Task CalculateForecastErrorInflation12MonthsAsync(DateTime earliestDate, CancellationToken cancellationToken)
         {
-            DateTime current = DateTime.Now;
 
-            Observation? latestMeeting = await _db.Observations.Where(o => o.Series.Code == "CopomComunicados").OrderByDescending(o => o.ObservationDate).FirstOrDefaultAsync();
+            string inflationExpectationCode = "ExpectativasMercadoInflacao12Meses";
+            string actualInflationMonthlyCode = "13522";
 
-        }
+            Series? forecastSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == inflationExpectationCode, cancellationToken);
 
-        public async Task CalculateForecastError12MonthsAsync(DateTime startDate, CancellationToken cancellationToken)
-        {
-            foreach ((string,string?) code in _seriesToBeCompared)
+            Series? actualSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == actualInflationMonthlyCode, cancellationToken);
+
+            if (forecastSeries == null)
             {
-                Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
+                throw new InvalidOperationException($"No series containing {inflationExpectationCode} where found");
+            }
+            else if (actualSeries == null)
+            {
+                throw new InvalidOperationException($"No series containing {actualInflationMonthlyCode} where found");
+            }
 
-                if (inputSeries == null)
-                    continue;
+            DateTime earliestForecastDate = earliestDate.AddYears(-1);  // The date of question is compared to the forecast exactly 12 months prior
 
-                List<Observation> observations =
-                    await _db.Observations
-                    .Where(o => o.SeriesId == inputSeries.Id)
-                    .OrderByDescending(o => o.ObservationDate >= startDate)
-                    .ToListAsync(cancellationToken);
+            Dictionary<DateTime, decimal> forecastInflationObservationsMonthly =
+                await _db.Observations
+                .Where(o => o.SeriesId == forecastSeries.Id)
+                .OrderBy(o => o.ObservationDate >= earliestForecastDate && o.ObservationDate.Day == 1)
+                .ToDictionaryAsync(a => a.ObservationDate,
+                a => a.Value,
+                cancellationToken);
 
-                string derivedSeriesCode = code + "_error12Months";
-                string derivedSeriesName = inputSeries.Name + " error12Months";
+            Dictionary<DateTime, decimal> actualInflationObservationsMonthly =
+                await _db.Observations
+                .Where(o => o.SeriesId == actualSeries.Id)
+                .OrderBy(o => o.ObservationDate >= earliestDate)
+                .ToDictionaryAsync(a => a.ObservationDate,
+                a => a.Value,
+                cancellationToken);
 
-                Series error12MonthsSerie = await _helperServices.FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
+            DateTime latestObservationDate = await _db.Observations.Where(o => o.SeriesId == actualSeries.Id)
+                .OrderByDescending(o => o.ObservationDate >= earliestDate).Select(o => o.ObservationDate).SingleOrDefaultAsync(cancellationToken);
 
-                for (int i = 0; i < observations.Count - 12; i++)
+            string derivedSeriesCode = actualSeries.Code + "_error12Months";
+            string derivedSeriesName = actualSeries.Name + " error12Months";
+
+            Series? error12MonthsSerie = await _db.Series.SingleOrDefaultAsync(s => s.Code == derivedSeriesCode, cancellationToken);
+
+            if (error12MonthsSerie == null)
+            {
+                error12MonthsSerie = await _helperServices.FindOrCreateNewDerivedSeries(derivedSeriesCode, derivedSeriesName, cancellationToken);
+            }
+
+            DateTime rollingDate = earliestDate;
+
+            while (rollingDate <= latestObservationDate)
+            {
+
+                if (!actualInflationObservationsMonthly.ContainsKey(rollingDate))
                 {
-                    Observation current = observations[i];
-                    Observation previousYear = observations[i + 12];
-
-                    decimal error12MonthsValue = current.Value - previousYear.Value;
-
-                    if (current.ObservationDate != previousYear.ObservationDate.AddYears(1))
-                    {
-                        _logger.LogWarning(
-                        "YoY calculation skipped for {Code} at {Date}: previous-year month is missing.",
-                        code,
-                        current.ObservationDate);
-                    }
-
-                    await _helperServices.UpsertDerivedObservationAsync(error12MonthsSerie.Id, current.ObservationDate, error12MonthsValue, cancellationToken);
+                    _logger.LogWarning("No observations from {series} for {date} recorded in db", actualSeries, rollingDate);
+                    rollingDate = rollingDate.AddMonths(1);
+                    continue;
+                }
+                if (!forecastInflationObservationsMonthly.ContainsKey(rollingDate))
+                {
+                    _logger.LogWarning("No observations from {series} for {date} recorded in db", forecastSeries, rollingDate);
+                    rollingDate = rollingDate.AddMonths(1);
+                    continue;
                 }
 
-                await _db.SaveChangesAsync(cancellationToken);
+                decimal error12MonthsValue = actualInflationObservationsMonthly[rollingDate] - forecastInflationObservationsMonthly[rollingDate];
 
-                _logger.LogInformation("ForecastError12Months series saved to db successfully! " +
-                    "Series transformed: {series}", string.Join(",", _ForecastError12Months));
+                await _helperServices.UpsertDerivedObservationAsync(error12MonthsSerie.Id, rollingDate, error12MonthsValue, cancellationToken);
+
+                rollingDate = rollingDate.AddMonths(1);
             }
+            await _db.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Series with code {code} from {startdate} to {enddate} saved to db successfully!", derivedSeriesCode, earliestDate, latestObservationDate);
         }
 
-        public async Task SeedForecastError12MonthsASync(CancellationToken cancellationToken)
-        {
-            DateTime startDate = new DateTime(2010, 1, 1).AddMonths(-12);
+    public async Task SeedForecastError12MonthsAsync(CancellationToken cancellationToken)
+    {
+        DateTime startDate = new DateTime(2018, 1, 1).AddMonths(-12);
 
-            _logger.LogInformation("Started seeding the database with Ttm transformations." +
-                "Series transformed: {series}", string.Join(",", _ForecastError12Months));
+        _logger.LogInformation("Started seeding derived series with code 13522_error12Months.");
 
-            await CalculateForecastError12MonthsAsync(startDate, cancellationToken);
+        await CalculateForecastErrorInflation12MonthsAsync(startDate, cancellationToken);
 
-            _logger.LogInformation("Seeded ForecastError12Months observations since 1 jan 2010 successfully!");
+        _logger.LogInformation("Seeded ForecastError12Months observations since 1 jan 2018 successfully!");
         }
 
         public async Task UpdateForecastError12MonthsAsync(CancellationToken cancellationToken)
         {
-            foreach (string code in _ForecastError12Months)
+
+                Series? Inputseries = await _db.Series.SingleOrDefaultAsync(s => s.Code == "13522", cancellationToken);
+
+            if (Inputseries == null)
             {
-                Series? inputSeries = await _db.Series.SingleOrDefaultAsync(s => s.Code == code, cancellationToken);
+                throw new InvalidOperationException("Please seed the input series with Code '13522'");
+            }
 
-                if (inputSeries == null)
-                    continue;
-
-                DateTime latestDate =
+            DateTime latestDate =
                     await _db.Observations
-                    .Where(o => o.SeriesId == inputSeries.Id)
+                    .Where(o => o.SeriesId == Inputseries.Id)
                     .OrderByDescending(o => o.ObservationDate)
                     .Select(o => o.ObservationDate)
                     .FirstOrDefaultAsync(cancellationToken);
 
                 DateTime startDate = latestDate.AddMonths(-(_LookbackMonths + 12)); // calculate the ttm for the latest "Lookback" months, IOptions
 
-                await CalculateForecastError12MonthsAsync(startDate, cancellationToken);
-            }
+                await CalculateForecastErrorInflation12MonthsAsync(startDate, cancellationToken);
+            
         }
     }
 }

@@ -15,7 +15,7 @@ namespace BrazilEconomicMonitor.Orchestrators
         private readonly CopomImportService _copomImportService;
         private readonly TtmTransformationService _ttmTransformationService;
         private readonly PrimaryBalanceOverGdpTransformationService _primaryBalanceOverGdpTransformationService;
-        private readonly ForecastError12MonthsTransformationService _forecastError12MonthsTransformationService;
+        private readonly ForecastErrorInflation12MonthsTransformationService _forecastError12MonthsTransformationService;
         private readonly YoyTransformationService _yoyTransformationService;
         private readonly ILogger<ImportCycleOrchestrator> _logger;
 
@@ -26,7 +26,7 @@ namespace BrazilEconomicMonitor.Orchestrators
             CopomImportService copomImportService,
             TtmTransformationService ttmTransformationService,
             PrimaryBalanceOverGdpTransformationService primaryBalanceOverGdpTransformationService,
-            ForecastError12MonthsTransformationService forecastError12MonthsTransformationService,
+            ForecastErrorInflation12MonthsTransformationService forecastError12MonthsTransformationService,
             YoyTransformationService yoyTransformationService,
             ILogger<ImportCycleOrchestrator> logger)
         {

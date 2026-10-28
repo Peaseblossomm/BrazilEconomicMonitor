@@ -55,7 +55,7 @@ namespace BrazilEconomicMonitor.BackgroundJobs
 
                     var forecastError12MonthsTransformationService =
                         scope.ServiceProvider
-                            .GetRequiredService<ForecastError12MonthsTransformationService>();
+                            .GetRequiredService<ForecastErrorInflation12MonthsTransformationService>();
 
                     var yoyTransformationService =
                         scope.ServiceProvider

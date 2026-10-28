@@ -92,43 +92,117 @@ namespace BrazilEconomicMonitor.Services.ApiImportServices
             await _db.SaveChangesAsync(cancellationToken);
         }
 
-        public async Task SeedSelicObservationPeriodsAsync(CancellationToken cancellationToken)
+        public async Task SeedSelicRateIntervalsAsync(CancellationToken cancellationToken)
         {
-            List<Observation> copomMeetings = await _db.Observations.Where(o => o.Series.Code == "CopomComunicados" && o.ObservationDate > new DateTime(2018, 12, 1))
-            .OrderBy(o => o.ObservationDate).ToListAsync(cancellationToken);                          // fati mu go redot tuka, ako 2018 12 1 e R82018, pocni od tamu da brois i da pravis novi Ri/YYYY
 
-            if (copomMeetings == null)
+            DateTime seedStartingDate = new DateTime(2018, 1, 1);
+
+            List<Observation> copomMeetings = await _db.Observations.Where(o => o.Series.Code == "CopomComunicados" && o.ObservationDate > seedStartingDate)
+            .OrderBy(o => o.ObservationDate).ToListAsync(cancellationToken);                          // fati mu go redot tuka, ako 2018 1 1 e R12018, pocni od tamu da brois i da pravis novi Ri/YYYY
+
+            if (copomMeetings.Count == 0)
             {
                 throw new InvalidOperationException("No copom meetings observations are found");
             }
 
+            int RInterval = 0;
+
+            int currentYear = copomMeetings[0].ObservationDate.Year;
+
             for (int i = 0; i < copomMeetings.Count; i++)
             {
-                DateTime startOfEffectiveRatePeriod = copomMeetings[i].ObservationDate.AddDays(1);
+                int meetingYear = copomMeetings[i].ObservationDate.Year;
 
-                DateTime? endOfEffectiveRatePeriod = null;
+                DateTime startOfEffectiveRatePeriod = copomMeetings[i].ObservationDate.AddDays(1);   //StartDate
+
+                DateTime? endOfEffectiveRatePeriod = null;                                           //EndDate
 
                 if (i < copomMeetings.Count - 1)
                 {
                     endOfEffectiveRatePeriod = copomMeetings[i + 1].ObservationDate;
                 }
 
+                RInterval++;                  //Interval number
+
+                if (meetingYear != currentYear)                                    //R8/2025 to R1/2026    8 Brazil central bank meetings annually
+                {
+                    RInterval = 1;
+                }
+
+                string designation = $"R{RInterval.ToString()}/" +
+                    $"{meetingYear.ToString()}";
+
+                currentYear = meetingYear;
+
                 SelicRateIntervals interval = new SelicRateIntervals
                 {
                     StartDate = startOfEffectiveRatePeriod,
-                    EndDate = endOfEffectiveRatePeriod
+                    EndDate = endOfEffectiveRatePeriod,
+                    Designation = designation
                 };
 
+                _db.SelicRateIntervals.Add(interval);
             }
+
+            await _db.SaveChangesAsync(cancellationToken);
         }
 
         public async Task UpdateSelicRateIntervalsAsync(CancellationToken cancellationToken)
         {
             Observation? latestCopomMeeting = await _db.Observations.Where(o => o.Series.Code == "CopomComunicados").OrderByDescending(o => o.ObservationDate).SingleOrDefaultAsync(cancellationToken);
 
-            SelicRateIntervals? latestInterval = await _db.SelicRateIntervals.OrderByDescending(o => o.StartDate).SingleOrDefaultAsync(cancellationToken);
+            if (latestCopomMeeting == null)
+            {
+                throw new InvalidOperationException("Please use the ImportCopomLatestMeetingAsync to seed Copom Meetings data in the db");
+            }
 
-            latestInterval.EndDate = latestCopomMeeting.ObservationDate;
+            SelicRateIntervals precedingInterval = await _db.SelicRateIntervals.OrderByDescending(o => o.StartDate).SingleOrDefaultAsync(cancellationToken);
+
+            if (precedingInterval == null)
+            {
+                throw new InvalidOperationException("Please use the SeedSelicRateIntervalsAsync to seed  Rate Interval data in the db");
+            }
+
+            DateTime latestCopomMeetingDate = latestCopomMeeting.ObservationDate;
+
+            if (latestCopomMeetingDate == precedingInterval.StartDate)  // No new data in the CopomMeetings series
+            {
+                return;
+            }
+
+            precedingInterval.EndDate = latestCopomMeetingDate;      // complete the preceding interval.  
+
+            string latestIntervalDesignation = precedingInterval.Designation;
+
+
+            int slashIndex = latestIntervalDesignation.IndexOf('/');
+            string periodSubstring = latestIntervalDesignation.Substring(1, slashIndex - 1);
+            int RInterval = int.Parse(periodSubstring);
+
+            RInterval++;
+
+            if (((DateTime)precedingInterval.EndDate).Year != precedingInterval.StartDate.Year)  //R8/2025 to R1/2026    8 Brazil central bank meetings annually
+            {
+                RInterval = 1;
+            }
+
+
+
+            string designation = $"R{RInterval.ToString()}/" + 
+                                 $"{latestCopomMeetingDate.Year.ToString()}";
+            
+            DateTime startOfNewInterval = latestCopomMeetingDate.AddDays(1);  // Add the start date of the new interval
+
+            SelicRateIntervals interval = new SelicRateIntervals
+            {
+                StartDate = startOfNewInterval,
+                EndDate = null,
+                Designation = designation
+            };
+
+            _db.SelicRateIntervals.Add(interval);
+
+            await _db.SaveChangesAsync(cancellationToken);
         }
     }
 }

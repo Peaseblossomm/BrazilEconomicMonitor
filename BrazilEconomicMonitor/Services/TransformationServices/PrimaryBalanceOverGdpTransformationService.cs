@@ -82,8 +82,6 @@ namespace BrazilEconomicMonitor.Services.TransformationServices
 
                 decimal roundedPrimBalanceGdpRatio = Math.Round(primBalanceGdpRatio, 2);
 
-                Console.WriteLine("primary balance Log: {primBalanceGdpRatio}");
-
                 await _helperServices.UpsertDerivedObservationAsync(primaryBalanceOverGdp.Id, date, roundedPrimBalanceGdpRatio, cancellationToken);
             }
 
